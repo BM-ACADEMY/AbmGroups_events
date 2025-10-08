@@ -37,13 +37,18 @@ const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
+    // Only include email if provided
+    const userData = {
       name,
-      email: email || null, // Allow null for optional
       phone,
       password: hashedPassword,
-      role: roleDoc._id, // Use ObjectId
-    });
+      role: roleDoc._id,
+    };
+    if (email) {
+      userData.email = email;
+    }
+
+    const user = await User.create(userData);
 
     // Populate for response
     const populatedUser = await User.findById(user._id).populate("role");

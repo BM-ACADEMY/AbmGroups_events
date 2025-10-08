@@ -42,6 +42,10 @@ app.use(morgan("dev"));
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/roles", require("./routes/roleRoutes"));
+app.use("/api/competitions", require("./routes/competitionRoutes"));
+app.use("/api/prizes", require("./routes/prizeRoutes"));
+app.use("/api/participants", require("./routes/participantRoutes"));
+
 
 // ====== Database ======
 connectDB();
