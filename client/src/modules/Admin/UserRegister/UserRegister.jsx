@@ -134,7 +134,7 @@ const UserRegister = () => {
       name: user.name,
       phone: user.phone,
       email: user.email || '',
-      role: user.role.name,
+      role: user.role?.name || '',
       password: '' // Don't prefill password
     });
     setEditingUser(user);
@@ -210,7 +210,7 @@ const UserRegister = () => {
     const existingParticipant = participants.find(p => p.user._id === user._id);
     setSelectedUserForChoose(user);
     setChooseFormData({ 
-      competition: existingParticipant ? existingParticipant.competition._id : '' 
+      competition: existingParticipant ? existingParticipant.competition?._id : '' 
     });
     setShowChooseModal(true);
   };
@@ -305,15 +305,15 @@ const UserRegister = () => {
                   .filter(u => u.role?.name !== "admin")
                   .map((user) => {
                     const userParticipations = participants
-                      .filter(p => p.user._id === user._id)
-                      .map(p => p.competition.name)
+                      .filter(p => p.user?._id === user._id)
+                      .map(p => p.competition?.name || 'Unknown')
                       .join(', ');
                     return (
                       <TableRow key={user._id}>
                         <TableCell>{user.name}</TableCell>
                         <TableCell>{user.phone}</TableCell>
                         <TableCell>{user.email || 'N/A'}</TableCell>
-                        <TableCell>{user.role?.name.replace('_', ' ').toUpperCase()}</TableCell>
+                        <TableCell>{user.role?.name?.replace('_', ' ').toUpperCase() || 'N/A'}</TableCell>
                         <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell>{userParticipations || 'None'}</TableCell>
                         <TableCell className="flex space-x-2">
@@ -449,7 +449,7 @@ const UserRegister = () => {
       <Dialog open={showChooseModal} onOpenChange={setShowChooseModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Register {selectedUserForChoose?.name} for Competition</DialogTitle>
+            <DialogTitle>Register {selectedUserForChoose?.name || 'User'} for Competition</DialogTitle>
             <DialogDescription>Select a competition to register this user (replaces existing if any).</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleChooseSubmit} className="space-y-4">
@@ -460,9 +460,11 @@ const UserRegister = () => {
                   <SelectValue placeholder="Select Competition" />
                 </SelectTrigger>
                 <SelectContent>
-                  {competitions.map((comp) => (
+                  {competitions
+                    .filter(comp => comp && comp._id)
+                    .map((comp) => (
                     <SelectItem key={comp._id} value={comp._id}>
-                      {comp.name}
+                      {comp.name || 'Unknown Competition'}
                     </SelectItem>
                   ))}
                 </SelectContent>

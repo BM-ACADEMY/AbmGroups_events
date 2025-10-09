@@ -13,14 +13,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Edit, Trash2 } from 'lucide-react';
+import { Loader2, Edit, Trash2, Image as ImageIcon, X } from 'lucide-react';
 import axiosInstance from '@/modules/axios/axios';
 import { showToast } from '@/modules/toast/customToast';
 
 const Competitions = () => {
   const [competitions, setCompetitions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState({ name: '', role: 'school_student', is_team_based: false });
+  const [formData, setFormData] = useState({ name: '', role: 'school_student', is_team_based: false, competition_image: null });
   const [filterRole, setFilterRole] = useState('all');
   const [creating, setCreating] = useState(false);
   const [editingComp, setEditingComp] = useState(null);
@@ -28,11 +28,18 @@ const Competitions = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Fetch competitions on mount
   useEffect(() => {
     fetchCompetitions();
   }, []);
+
+  const openImagePreview = (imageUrl) => {
+    setPreviewImage(imageUrl);
+    setShowPreviewModal(true);
+  };
 
   const fetchCompetitions = async () => {
     try {
@@ -54,6 +61,15 @@ const Competitions = () => {
       return;
     }
 
+    const formDataToSend = new FormData();
+    formDataToSend.append('name', formData.name.trim());
+    formDataToSend.append('role', formData.role);
+    formDataToSend.append('is_team_based', formData.is_team_based);
+    formDataToSend.append('requires_upload', false);
+    if (formData.competition_image) {
+      formDataToSend.append('competition_image', formData.competition_image);
+    }
+
     try {
       setCreating(true);
       // Fetch roles to get id
@@ -64,19 +80,18 @@ const Competitions = () => {
         return;
       }
 
-      const payload = {
-        name: formData.name.trim(),
-        role: roleObj._id,
-        is_team_based: formData.is_team_based,
-        requires_upload: false,
-      };
+      formDataToSend.set('role', roleObj._id);
 
-      const createResponse = await axiosInstance.post('/competitions', payload);
+      const createResponse = await axiosInstance.post('/competitions', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       // Optimistic update: add the new competition to the list instantly
       const newComp = { ...createResponse.data.competition, role: { name: formData.role } };
       setCompetitions(prev => [newComp, ...prev]);
       showToast('success', 'Competition created successfully');
-      setFormData({ name: '', role: 'school_student', is_team_based: false });
+      setFormData({ name: '', role: 'school_student', is_team_based: false, competition_image: null });
     } catch (error) {
       console.error('Error creating competition:', error);
       const errMsg = error.response?.data?.message || 'Failed to create competition';
@@ -95,6 +110,15 @@ const Competitions = () => {
       return;
     }
 
+    const formDataToSend = new FormData();
+    formDataToSend.append('name', formData.name.trim());
+    formDataToSend.append('role', formData.role);
+    formDataToSend.append('is_team_based', formData.is_team_based);
+    formDataToSend.append('requires_upload', editingComp.requires_upload);
+    if (formData.competition_image) {
+      formDataToSend.append('competition_image', formData.competition_image);
+    }
+
     try {
       setUpdating(true);
       // Fetch roles to get id
@@ -105,25 +129,23 @@ const Competitions = () => {
         return;
       }
 
-      const payload = {
-        name: formData.name.trim(),
-        role: roleObj._id,
-        is_team_based: formData.is_team_based,
-        requires_upload: editingComp.requires_upload,
-      };
+      formDataToSend.set('role', roleObj._id);
 
-      const updateResponse = await axiosInstance.put(`/competitions/${editingComp._id}`, payload);
-      // Update the list
+      const updateResponse = await axiosInstance.put(`/competitions/${editingComp._id}`, formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      // Update the list with response data
+      const updatedComp = { ...updateResponse.data.competition, role: { name: formData.role } };
       setCompetitions(prev =>
         prev.map(c =>
-          c._id === editingComp._id
-            ? { ...c, ...payload, role: { name: formData.role, _id: roleObj._id } }
-            : c
+          c._id === editingComp._id ? updatedComp : c
         )
       );
       showToast('success', 'Competition updated successfully');
       setEditingComp(null);
-      setFormData({ name: '', role: 'school_student', is_team_based: false });
+      setFormData({ name: '', role: 'school_student', is_team_based: false, competition_image: null });
     } catch (error) {
       console.error('Error updating competition:', error);
       const errMsg = error.response?.data?.message || 'Failed to update competition';
@@ -164,6 +186,13 @@ const Competitions = () => {
     });
   };
 
+  const handleImageChange = (e) => {
+    setFormData({
+      ...formData,
+      competition_image: e.target.files[0],
+    });
+  };
+
   const handleFilterChange = (value) => {
     setFilterRole(value);
   };
@@ -173,6 +202,7 @@ const Competitions = () => {
       name: comp.name,
       role: comp.role.name,
       is_team_based: comp.is_team_based,
+      competition_image: null, // Reset file input
     });
     setEditingComp(comp);
   };
@@ -227,6 +257,27 @@ const Competitions = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Competition Image</label>
+              <Input
+                type="file"
+                name="competition_image"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full"
+              />
+              {formData.competition_image && (
+                <div className="mt-2">
+                  <img 
+                    src={URL.createObjectURL(formData.competition_image)} 
+                    alt="Preview" 
+                    className="w-16 h-16 object-cover rounded cursor-pointer"
+                    onClick={() => openImagePreview(URL.createObjectURL(formData.competition_image))}
+                  />
+                  <p className="text-xs text-gray-500">Preview</p>
+                </div>
+              )}
+            </div>
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Team Based</label>
               <Switch
@@ -277,6 +328,7 @@ const Competitions = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>User Type</TableHead>
                 <TableHead>Team Based</TableHead>
+                <TableHead>Image</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -284,7 +336,7 @@ const Competitions = () => {
             <TableBody>
               {filteredCompetitions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No competitions found.
                   </TableCell>
                 </TableRow>
@@ -294,6 +346,25 @@ const Competitions = () => {
                     <TableCell>{comp.name}</TableCell>
                     <TableCell>{comp.role.name.replace('_', ' ')}</TableCell>
                     <TableCell>{comp.is_team_based ? 'Yes' : 'No'}</TableCell>
+                    <TableCell>
+                      {comp.competition_image ? (
+                        <div className="flex items-center space-x-2">
+                          <img 
+                            src={comp.competition_image} 
+                            alt={comp.name} 
+                            className="w-8 h-8 object-cover rounded cursor-pointer"
+                            onClick={() => openImagePreview(comp.competition_image)}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'block';
+                            }}
+                          />
+                          <ImageIcon className="h-8 w-8 text-gray-400 hidden" />
+                        </div>
+                      ) : (
+                        <ImageIcon className="h-8 w-8 text-gray-400" />
+                      )}
+                    </TableCell>
                     <TableCell>{new Date(comp.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="flex space-x-2">
                       <Button
@@ -348,6 +419,41 @@ const Competitions = () => {
                   <SelectItem value="college_student">College Student</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Competition Image (optional)</label>
+              <Input
+                type="file"
+                name="competition_image"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full"
+              />
+              {formData.competition_image && (
+                <div className="mt-2">
+                  <img 
+                    src={URL.createObjectURL(formData.competition_image)} 
+                    alt="Preview" 
+                    className="w-16 h-16 object-cover rounded cursor-pointer"
+                    onClick={() => openImagePreview(URL.createObjectURL(formData.competition_image))}
+                  />
+                  <p className="text-xs text-gray-500">New preview</p>
+                </div>
+              )}
+              {editingComp?.competition_image && !formData.competition_image && (
+                <div className="mt-2">
+                  <img 
+                    src={editingComp.competition_image} 
+                    alt="Current" 
+                    className="w-16 h-16 object-cover rounded cursor-pointer"
+                    onClick={() => openImagePreview(editingComp.competition_image)}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                  <p className="text-xs text-gray-500">Current image</p>
+                </div>
+              )}
             </div>
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Team Based</label>
@@ -404,6 +510,28 @@ const Competitions = () => {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Modal */}
+      <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal} modal={true}>
+        <DialogContent className="p-0 ">
+          <DialogHeader className="flex justify-end p-4">
+            <DialogTitle className="sr-only">Image Preview</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center  justify-center p-4">
+            {previewImage && (
+              <img
+                src={previewImage}
+                alt="Preview"
+                className="max-w-full max-h-[70vh] rounded-lg object-contain"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  showToast('error', 'Failed to load image');
+                }}
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,3 +1,4 @@
+// models/Competition.js
 const mongoose = require("mongoose");
 
 const competitionSchema = new mongoose.Schema(
@@ -10,6 +11,7 @@ const competitionSchema = new mongoose.Schema(
     },
     is_team_based: { type: Boolean, default: false },
     requires_upload: { type: Boolean, default: false },
+    competition_image: { type: String }, // New field for image URL
   },
   { timestamps: true }
 );

@@ -42,8 +42,8 @@ const Prices = () => {
         axiosInstance.get('/competitions'),
         axiosInstance.get('/prizes')
       ]);
-      setCompetitions(compsRes.data);
-      setPrizes(prizesRes.data);
+      setCompetitions(compsRes.data || []);
+      setPrizes(prizesRes.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
       showToast('error', 'Failed to fetch data');
@@ -101,7 +101,7 @@ const Prices = () => {
     try {
       setUpdating(true);
       const payload = {
-        competition: editingPrize.competition._id,
+        competition: editingPrize.competition?._id,
         rank: formData.rank.trim(),
         amount: parseFloat(formData.amount).toFixed(2),
       };
@@ -164,7 +164,7 @@ const Prices = () => {
 
   const openEdit = (prize) => {
     setFormData({
-      rank: prize.rank,
+      rank: prize.rank || '',
       amount: getAmountValue(prize.amount),
     });
     setEditingPrize(prize);
@@ -184,7 +184,7 @@ const Prices = () => {
     });
   };
 
-  const compPrizes = prizes.filter(prize => prize.competition._id === selectedComp?._id);
+  const compPrizes = prizes.filter(prize => prize.competition?._id === selectedComp?._id);
 
   // Helper function to get amount as formatted string
   const getFormattedAmount = (amountObj) => {
@@ -194,7 +194,7 @@ const Prices = () => {
 
   // Sort prizes by rank in ascending order
   const getRankNumber = (rank) => {
-    const match = rank.match(/(\d+)/);
+    const match = rank?.match(/(\d+)/);
     return match ? parseInt(match[1], 10) : Infinity;
   };
 
@@ -230,7 +230,7 @@ const Prices = () => {
                 <SelectContent>
                   {competitions.map((comp) => (
                     <SelectItem key={comp._id} value={comp._id}>
-                      {comp.name} ({comp.role.name.replace('_', ' ')})
+                      {comp.name} ({comp.role?.name?.replace('_', ' ') || 'Unknown'})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -298,7 +298,7 @@ const Prices = () => {
                 competitions.map((comp) => (
                   <TableRow key={comp._id}>
                     <TableCell>{comp.name}</TableCell>
-                    <TableCell>{comp.role.name.replace('_', ' ')}</TableCell>
+                    <TableCell>{comp.role?.name?.replace('_', ' ') || 'Unknown'}</TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
