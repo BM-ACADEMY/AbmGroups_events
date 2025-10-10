@@ -80,11 +80,11 @@ const login = async (req, res) => {
 
     const token = generateToken(user);
 
-    res.cookie("token", token, {
+       res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === 'production',
       maxAge: 24 * 60 * 60 * 1000, // 1 day
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     });
 
     res.json({ message: "Login successful", user });
@@ -95,8 +95,18 @@ const login = async (req, res) => {
 
 // Logout
 const logout = async (req, res) => {
-  res.clearCookie("token");
-  res.json({ message: "Logged out successfully" });
+    try {
+    res.cookie('token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      expires: new Date(0),
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Match login cookie
+    });
+    res.status(200).json({ message: 'Logout successful' });
+  } catch (error) {
+    console.error('Logout - Error:', error.message);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 };
 
 // Current User
