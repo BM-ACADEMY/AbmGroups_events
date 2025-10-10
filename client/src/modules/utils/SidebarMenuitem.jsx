@@ -1,7 +1,7 @@
 import {
   IconUser,
 } from "@tabler/icons-react";
-import {LayoutDashboard, CalendarPlus,Trophy, UserPlus2 } from "lucide-react";
+import {LayoutDashboard, CalendarPlus,Trophy, UserPlus2,BookImage } from "lucide-react";
 
 export const sidebarMenuItems = {
   admin: [
@@ -9,6 +9,9 @@ export const sidebarMenuItems = {
     { url: "/admin-dashboard/userregistration", title: "User Registration", icon: UserPlus2 },
     { url: "/admin-dashboard/competition", title: "Competitions", icon: CalendarPlus },
     { url: "/admin-dashboard/prices", title: "Prices", icon: Trophy },
+    { url: "/admin-dashboard/drawingcandidates", title: "Drawing Candidates", icon: BookImage },
+    { url: "/admin-dashboard/skidcandidates", title: "Skid Candidates", icon: BookImage },
+    { url: "/admin-dashboard/memescandidates", title: "Memes Candidates", icon: BookImage },
   ],
   college_student: [
     { url: "/college_student-dashboard", title: "Dashboard", icon: LayoutDashboard },

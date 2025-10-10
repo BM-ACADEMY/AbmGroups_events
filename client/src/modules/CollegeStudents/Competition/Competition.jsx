@@ -2,19 +2,18 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '@/modules/AuthContext/AuthContext';
 import axiosInstance from '@/modules/axios/axios';
 import { showToast } from '@/modules/toast/customToast';
-import DrawingUpload from './DrawingUpload';
-import QuizTest from './QuizTest';
-import { Upload, FileText } from 'lucide-react'; // Import Lucide icons
+import LogoUpload from './LogoUpload/LogoUpload';
+import MemsUpload from './MemsUpload/MemsUpload';
+import SkidUpload from './SkidUpload/SkidUpload';
+import CodingSubmission from './CodingSubmission/CodingSubmission';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Competition = () => {
   const { user, loading } = useContext(AuthContext);
   const [myCompetition, setMyCompetition] = useState(null);
   const [fetchLoading, setFetchLoading] = useState(true);
-  const [showDrawingUpload, setShowDrawingUpload] = useState(false);
-  const [showQuizTest, setShowQuizTest] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false); // State for image modal
-  const [selectedImage, setSelectedImage] = useState(null); // State for selected image URL
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     const fetchMyCompetition = async () => {
@@ -52,14 +51,14 @@ const Competition = () => {
     }
   }, [user, loading]);
 
-  const handleDrawingUploadClick = () => {
-    setShowDrawingUpload(true);
-    setShowQuizTest(false);
+  const handleViewImage = (imageUrl) => {
+    setSelectedImage(imageUrl);
+    setShowImageModal(true);
   };
 
-  const handleQuizTestClick = () => {
-    setShowQuizTest(true);
-    setShowDrawingUpload(false);
+  const handleCloseModal = () => {
+    setShowImageModal(false);
+    setSelectedImage(null);
   };
 
   const handleUploadSuccess = (updatedParticipant) => {
@@ -67,20 +66,7 @@ const Competition = () => {
       ...myCompetition,
       upload_path: updatedParticipant.upload_path,
     });
-    setShowDrawingUpload(false);
-    showToast('success', 'Drawing uploaded successfully');
-  };
-
-  // Open modal with the selected image
-  const handleViewImage = (imageUrl) => {
-    setSelectedImage(imageUrl);
-    setShowImageModal(true);
-  };
-
-  // Close the image modal
-  const handleCloseModal = () => {
-    setShowImageModal(false);
-    setSelectedImage(null);
+    showToast('success', 'File(s) uploaded successfully');
   };
 
   if (loading || fetchLoading) {
@@ -102,6 +88,38 @@ const Competition = () => {
     );
   }
 
+  const renderCompetitionComponent = () => {
+    const competitionName = myCompetition.name.toLowerCase();
+    if (competitionName.includes('logo')) {
+      return (
+        <LogoUpload
+          participantId={myCompetition.participantId}
+          upload_path={myCompetition.upload_path}
+          onUploadSuccess={handleUploadSuccess}
+        />
+      );
+    } else if (competitionName.includes('mems')) {
+      return (
+        <MemsUpload
+          participantId={myCompetition.participantId}
+          upload_path={myCompetition.upload_path}
+          onUploadSuccess={handleUploadSuccess}
+        />
+      );
+    } else if (competitionName.includes('skid')) {
+      return (
+        <SkidUpload
+          participantId={myCompetition.participantId}
+          upload_path={myCompetition.upload_path}
+          onUploadSuccess={handleUploadSuccess}
+        />
+      );
+    } else if (competitionName.includes('coding')) {
+      return <CodingSubmission />;
+    }
+    return null;
+  };
+
   return (
     <div className="p-6 relative">
       <h1 className="text-2xl font-bold mb-4 text-gray-800">Your Chosen Competition</h1>
@@ -119,72 +137,58 @@ const Competition = () => {
         <p className="text-gray-600 mb-2">Total Marks: {myCompetition.total_marks}</p>
         <p className="text-gray-600 mb-2">Team Based: {myCompetition.is_team_based ? 'Yes' : 'No'}</p>
         {myCompetition.upload_path && (
-          <p className="text-gray-600 mb-4">
-            Uploaded Drawing:{' '}
-            <button
-              onClick={() => handleViewImage(myCompetition.upload_path)}
-              className="text-blue-500 underline hover:text-blue-600"
-            >
-              View
-            </button>
-          </p>
-        )}
-        <div className="flex gap-2">
-          {myCompetition.name.toLowerCase().includes('drawing') && (
-            <button
-              className={`flex items-center gap-2 px-4 py-2 rounded text-white transition-colors ${myCompetition.upload_path
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 hover:bg-blue-600'
-                }`}
-              onClick={handleDrawingUploadClick}
-              disabled={!!myCompetition.upload_path}
-            >
-              <Upload size={20} />
-              Upload Drawing
-            </button>
-          )}
-          {myCompetition.name.toLowerCase().includes('quiz') && (
-            <button
-              className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
-              onClick={handleQuizTestClick}
-            >
-              <FileText size={20} />
-              Take Quiz
-            </button>
-          )}
-        </div>
-      </div>
-
-      {showDrawingUpload && (
-        <div className="fixed inset-0 bg-black/70 bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-            <DrawingUpload
-              participantId={myCompetition.participantId}
-              onClose={() => setShowDrawingUpload(false)}
-              onUploadSuccess={handleUploadSuccess}
-            />
+          <div className="text-gray-600 mb-4">
+            <p>Uploaded File(s):</p>
+            {Array.isArray(myCompetition.upload_path) ? (
+              myCompetition.upload_path.map((path, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleViewImage(path)}
+                  className="text-blue-500 underline hover:text-blue-600 mr-2"
+                >
+                  View File {index + 1}
+                </button>
+              ))
+            ) : (
+              <button
+                onClick={() => handleViewImage(myCompetition.upload_path)}
+                className="text-blue-500 underline hover:text-blue-600"
+              >
+                View File
+              </button>
+            )}
           </div>
-        </div>
-      )}
-      {showQuizTest && (
-        <QuizTest competitionId={myCompetition._id} onClose={() => setShowQuizTest(false)} />
-      )}
+        )}
+        {renderCompetitionComponent()}
+      </div>
       <Dialog open={showImageModal} onOpenChange={handleCloseModal} modal={true}>
         <DialogContent className="p-0">
           <DialogHeader className="flex justify-end p-4">
-            <DialogTitle className="sr-only">Image Preview</DialogTitle>
+            <DialogTitle className="sr-only">File Preview</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center p-4">
             {selectedImage && (
-              <img
-                src={selectedImage}
-                alt="Uploaded drawing"
-                className="max-w-full max-h-[80vh] rounded-lg object-contain"
-                onError={(e) => {
-                  e.target.style.display = "none";
-                  showToast("error", "Failed to load image");
-                }}
-              />
+              myCompetition.name.toLowerCase().includes('skid') ? (
+                <video
+                  src={selectedImage}
+                  className="max-w-full max-h-[80vh] rounded-lg"
+                  controls
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    showToast('error', 'Failed to load video');
+                  }}
+                />
+              ) : (
+                <img
+                  src={selectedImage}
+                  alt="Uploaded file"
+                  className="max-w-full max-h-[80vh] rounded-lg object-contain"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    showToast('error', 'Failed to load image');
+                  }}
+                />
+              )
             )}
           </div>
         </DialogContent>
