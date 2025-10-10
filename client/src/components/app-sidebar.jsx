@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { AuthContext } from "@/modules/AuthContext/AuthContext";
 import { sidebarMenuItems, validRoles } from "@/modules/utils/SidebarMenuitem";
+import { Phone } from "lucide-react";
 
 export function AppSidebar({ ...props }) {
   const { user } = React.useContext(AuthContext);
@@ -25,13 +26,15 @@ export function AppSidebar({ ...props }) {
   const navMainItems = role ? sidebarMenuItems[role] : [];
 
   // User data for NavUser
-  const userData = user
-    ? {
-        name: user.name || "User",
-        email: user.email || "No email",
-        avatar: user.profileImage || "/avatars/default.jpg",
-      }
-    : { name: "Guest", email: "", avatar: "/avatars/default.jpg" };
+const userData = user
+  ? {
+      name: user.name || "User",
+      email: user.email || null,  // keep null if no email
+      phone: user.phone || null,  // keep null if no phone
+      avatar: user.profileImage || "/avatars/default.jpg",
+    }
+  : { name: "Guest", email: "", phone: "", avatar: "/avatars/default.jpg" };
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
