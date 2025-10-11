@@ -25,7 +25,12 @@ const Competition = () => {
       try {
         const response = await axiosInstance.get('/participants');
         const participants = response.data.data;
-        const myParticipant = participants.find(p => p.user._id === user._id);
+
+        // Debug: Log participants to inspect data
+        console.log('Participants:', participants);
+
+        // Add null check for p.user
+        const myParticipant = participants.find(p => p.user && p.user._id === user._id);
 
         if (myParticipant) {
           const compResponse = await axiosInstance.get(`/competitions/${myParticipant.competition._id}`);
@@ -36,6 +41,7 @@ const Competition = () => {
             total_marks: myParticipant.total_marks,
           });
         } else {
+          console.log('No matching participant found for user:', user._id);
           setMyCompetition(null);
         }
       } catch (error) {
@@ -98,7 +104,7 @@ const Competition = () => {
           onUploadSuccess={handleUploadSuccess}
         />
       );
-    } else if (competitionName.includes('mems')) {
+    } else if (competitionName.includes('memes')) {
       return (
         <MemsUpload
           participantId={myCompetition.participantId}

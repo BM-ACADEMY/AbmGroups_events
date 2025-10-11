@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Loader2, User, Mail, Phone, Lock, School, Trash2, Edit, Plus } from 'lucide-react';
 import axiosInstance from '@/modules/axios/axios';
 import { showToast } from '@/modules/toast/customToast';
@@ -72,6 +72,7 @@ const UserRegister = () => {
   const fetchParticipants = async () => {
     try {
       const response = await axiosInstance.get('/participants');
+      console.log('Participants:', response.data.data); // Debug: Log participants
       setParticipants(response.data.data || []);
     } catch (error) {
       console.error('Error fetching participants:', error);
@@ -115,7 +116,6 @@ const UserRegister = () => {
 
     try {
       setCreating(true);
-      // Use auth register endpoint for consistency (handles role lookup, phone/email checks)
       const response = await axiosInstance.post('/auth/register', formData);
       showToast('success', 'User registered successfully');
       setFormData({ name: '', phone: '', email: '', password: '', role: '' });
@@ -165,7 +165,6 @@ const UserRegister = () => {
         payload.email = formData.email;
       }
       if (formData.password) {
-        // Hash password if provided, but since backend handles it in updateUser
         payload.password = formData.password;
       }
 
@@ -207,10 +206,11 @@ const UserRegister = () => {
   };
 
   const openChooseModal = (user) => {
-    const existingParticipant = participants.find(p => p.user._id === user._id);
+    // Add null check for p.user
+    const existingParticipant = participants.find(p => p.user && p.user._id === user._id);
     setSelectedUserForChoose(user);
     setChooseFormData({ 
-      competition: existingParticipant ? existingParticipant.competition?._id : '' 
+      competition: existingParticipant ? existingParticipant.competition?._id || '' : '' 
     });
     setShowChooseModal(true);
   };
@@ -345,7 +345,6 @@ const UserRegister = () => {
             <DialogDescription>{editingUser ? 'Update user details.' : 'Create a new user account.'}</DialogDescription>
           </DialogHeader>
           <form onSubmit={editingUser ? handleUpdate : handleSubmit} className="space-y-4">
-            {/* Name */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Full Name</label>
               <div className="relative">
@@ -361,8 +360,6 @@ const UserRegister = () => {
                 />
               </div>
             </div>
-
-            {/* Phone */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Phone Number</label>
               <div className="relative">
@@ -378,8 +375,6 @@ const UserRegister = () => {
                 />
               </div>
             </div>
-
-            {/* Email - Optional */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Email (Optional)</label>
               <div className="relative">
@@ -394,8 +389,6 @@ const UserRegister = () => {
                 />
               </div>
             </div>
-
-            {/* Password */}
             <div className="space-y-2">
               <label className="text-sm font-medium">{editingUser ? 'New Password (Optional)' : 'Password'}</label>
               <div className="relative">
@@ -411,8 +404,6 @@ const UserRegister = () => {
                 />
               </div>
             </div>
-
-            {/* Role Dropdown */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Role</label>
               <Select value={formData.role} onValueChange={handleRoleChange} required>
@@ -425,7 +416,6 @@ const UserRegister = () => {
                 </SelectContent>
               </Select>
             </div>
-
             <DialogFooter className="space-x-2">
               <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                 Cancel
@@ -463,10 +453,10 @@ const UserRegister = () => {
                   {competitions
                     .filter(comp => comp && comp._id)
                     .map((comp) => (
-                    <SelectItem key={comp._id} value={comp._id}>
-                      {comp.name || 'Unknown Competition'}
-                    </SelectItem>
-                  ))}
+                      <SelectItem key={comp._id} value={comp._id}>
+                        {comp.name || 'Unknown Competition'}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
