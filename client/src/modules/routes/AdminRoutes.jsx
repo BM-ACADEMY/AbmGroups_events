@@ -5,7 +5,9 @@ import Prices from '../Admin/Prices/Prices';
 import UserRegister from '../Admin/UserRegister/UserRegister';
 import DrawingCandidates from '../Admin/Drawingcandidates/Drawingcandidates';
 import Skid from '../Admin/Skid/Skid';
+import Logo from '../Admin/Logo/Logo';
 import Memes from '../Admin/Memes/Memes';
+import Photgraphy from '../Admin/Photography/Photography';
 
 export const adminRoutes = [
   {
@@ -63,6 +65,22 @@ export const adminRoutes = [
     element: (
       <PrivateRoute allowedRole="admin">
         <Memes/>
+      </PrivateRoute>
+    ),
+  },
+    {
+    path: '/admin-dashboard/logocandidates',
+    element: (
+      <PrivateRoute allowedRole="admin">
+        <Logo/>
+      </PrivateRoute>
+    ),
+  },
+    {
+    path: '/admin-dashboard/photographycandidates',
+    element: (
+      <PrivateRoute allowedRole="admin">
+        <Photgraphy/>
       </PrivateRoute>
     ),
   },

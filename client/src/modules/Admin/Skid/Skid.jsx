@@ -116,42 +116,42 @@ const Skid = () => {
   };
 
   // Download the video using axios to handle CORS/authenticated requests
-  const handleDownloadVideo = async () => {
-    if (previewVideo && selectedParticipant) {
-      try {
-        // Fetch the video as a blob
-        const response = await axiosInstance.get(previewVideo, {
-          responseType: 'blob',
-          withCredentials: true,
-        });
+  // const handleDownloadVideo = async () => {
+  //   if (previewVideo && selectedParticipant) {
+  //     try {
+  //       // Fetch the video as a blob
+  //       const response = await axiosInstance.get(previewVideo, {
+  //         responseType: 'blob',
+  //         withCredentials: true,
+  //       });
 
-        // Create a URL for the blob
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+  //       // Create a URL for the blob
+  //       const url = window.URL.createObjectURL(new Blob([response.data]));
 
-        // Determine the filename
-        const filenameFromUrl = previewVideo.split('/').pop() || 'video';
-        const participantName = selectedParticipant.user?.name
-          ? selectedParticipant.user.name.replace(/\s+/g, '_').toLowerCase()
-          : 'participant';
-        const extension = filenameFromUrl.split('.').pop() || 'mp4'; // Default to mp4 for videos
-        const filename = `${participantName}_video.${extension}`;
+  //       // Determine the filename
+  //       const filenameFromUrl = previewVideo.split('/').pop() || 'video';
+  //       const participantName = selectedParticipant.user?.name
+  //         ? selectedParticipant.user.name.replace(/\s+/g, '_').toLowerCase()
+  //         : 'participant';
+  //       const extension = filenameFromUrl.split('.').pop() || 'mp4'; // Default to mp4 for videos
+  //       const filename = `${participantName}_video.${extension}`;
 
-        // Create and trigger the download
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      } catch (err) {
-        console.error('Error downloading video:', err);
-        showToast('error', 'Failed to download video');
-      }
-    } else {
-      showToast('error', 'No video available for download');
-    }
-  };
+  //       // Create and trigger the download
+  //       const link = document.createElement('a');
+  //       link.href = url;
+  //       link.download = filename;
+  //       document.body.appendChild(link);
+  //       link.click();
+  //       document.body.removeChild(link);
+  //       window.URL.revokeObjectURL(url);
+  //     } catch (err) {
+  //       console.error('Error downloading video:', err);
+  //       showToast('error', 'Failed to download video');
+  //     }
+  //   } else {
+  //     showToast('error', 'No video available for download');
+  //   }
+  // };
 
   if (loading) {
     return <div className="text-center p-4 text-gray-600">Loading...</div>;
@@ -216,14 +216,14 @@ const Skid = () => {
               />
             )}
           </div>
-          <div className="text-center pb-4">
+          {/* <div className="text-center pb-4">
             <button
               onClick={handleDownloadVideo}
               className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
             >
               Download Video
             </button>
-          </div>
+          </div> */}
         </DialogContent>
       </Dialog>
 

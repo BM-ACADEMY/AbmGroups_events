@@ -26,31 +26,34 @@ export function AppSidebar({ ...props }) {
   const navMainItems = role ? sidebarMenuItems[role] : [];
 
   // User data for NavUser
-const userData = user
-  ? {
-      name: user.name || "User",
-      email: user.email || null,  // keep null if no email
-      phone: user.phone || null,  // keep null if no phone
-      avatar: user.profileImage || "/avatars/default.jpg",
-    }
-  : { name: "Guest", email: "", phone: "", avatar: "/avatars/default.jpg" };
+  const userData = user
+    ? {
+        name: user.name || "User",
+        email: user.email || null,  // keep null if no email
+        phone: user.phone || null,  // keep null if no phone
+        avatar: user.profileImage || "/avatars/default.jpg",
+      }
+    : { name: "Guest", email: "", phone: "", avatar: "/avatars/default.jpg" };
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="offcanvas" {...props} className="bg-sidebar">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
+            <SidebarMenuButton 
+              asChild 
+              className="data-[slot=sidebar-menu-button]:!p-1.5 text-sidebar-foreground"
+            >
               <Link to="/">
-                <IconInnerShadowTopLeft className="!size-5" />
-                <span className="text-base font-semibold">ABM Events</span>
+                <IconInnerShadowTopLeft className="!size-5 text-sidebar-primary" />
+                <span className="text-base font-semibold text-sidebar-foreground">ABM Events</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent >
-        <NavMain  items={navMainItems} />
+      <SidebarContent>
+        <NavMain items={navMainItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={userData} />

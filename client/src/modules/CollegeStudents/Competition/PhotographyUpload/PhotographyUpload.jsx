@@ -1,14 +1,14 @@
-// LogoUpload.jsx
 import React, { useState } from 'react';
 import axiosInstance from '@/modules/axios/axios';
 import { showToast } from '@/modules/toast/customToast';
 import { Upload } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
-const LogoUpload = ({ participantId, upload_path, onUploadSuccess }) => {
+const PhotographyUpload = ({ participantId, upload_path, onUploadSuccess }) => {
   const [files, setFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  const maxUploads = 3;
+  const maxUploads = 15;
   const existingFileCount = Array.isArray(upload_path) ? upload_path.length : 0;
   const remainingUploads = maxUploads - existingFileCount;
 
@@ -70,19 +70,17 @@ const LogoUpload = ({ participantId, upload_path, onUploadSuccess }) => {
           disabled={isDisabled}
           className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
         />
-        <button
+        <Button
           onClick={handleUpload}
           disabled={isDisabled || isUploading}
-          className={`flex items-center gap-2 px-4 py-2 rounded text-white transition-colors ${
-            isDisabled || isUploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
-          }`}
+          className={`flex items-center gap-2 ${isDisabled || isUploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'}`}
         >
           <Upload size={20} />
-          {isUploading ? 'Uploading...' : `Upload Logo Images (up to ${remainingUploads})`}
-        </button>
+          {isUploading ? 'Uploading...' : `Upload Photography Images (up to ${remainingUploads})`}
+        </Button>
       </div>
     </div>
   );
 };
 
-export default LogoUpload;
+export default PhotographyUpload;

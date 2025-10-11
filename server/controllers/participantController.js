@@ -5,30 +5,52 @@ const { processFile, deleteFile } = require('../utils/upload');
 exports.createParticipant = async (req, res) => {
   try {
     const { user, competition, total_marks } = req.body;
-    let upload_path = null;
+    let upload_path = [];
 
-    if (req.file) {
-      if (req.file.size > 20 * 1024 * 1024) {
-        return res.status(400).json({ success: false, message: 'File size must be less than 20MB' });
+    // Fetch competition details to determine max uploads
+    const competitionDoc = await require('../models/Competition').findById(competition);
+    if (!competitionDoc) {
+      return res.status(404).json({ success: false, message: 'Competition not found' });
+    }
+    const maxUploads = competitionDoc.name.toLowerCase().includes('photography') ? 15 : 3;
+
+    if (req.files && req.files.length > 0) {
+      // Validate file size (20MB limit per file)
+      for (const file of req.files) {
+        if (file.size > 20 * 1024 * 1024) {
+          return res.status(400).json({ success: false, message: `File ${file.originalname} exceeds 20MB limit` });
+        }
       }
 
-      const mimetype = req.file.mimetype;
-      const fileName = `drawingevent_${Date.now()}_${req.file.originalname}`;
-      upload_path = await processFile(req.file.buffer, mimetype, 'drawingevent', fileName);
+      // Validate total file count
+      if (req.files.length > maxUploads) {
+        return res.status(400).json({ success: false, message: `Cannot upload more than ${maxUploads} files for this competition.` });
+      }
+
+      // Process each file
+      upload_path = await Promise.all(
+        req.files.map(async (file) => {
+          const fileName = `drawingevent_${Date.now()}_${file.originalname}`;
+          return await processFile(file.buffer, file.mimetype, 'drawingevent', fileName);
+        })
+      );
     }
 
     const existingParticipant = await Participant.findOne({ user });
 
     if (existingParticipant) {
-      if (existingParticipant.upload_path && req.file) {
-        deleteFile(existingParticipant.upload_path, 'drawingevent');
+      // Delete existing files if new files are uploaded
+      if (existingParticipant.upload_path && req.files && req.files.length > 0) {
+        for (const path of existingParticipant.upload_path) {
+          deleteFile(path, 'drawingevent');
+        }
       }
 
       const updatedParticipant = await Participant.findByIdAndUpdate(
         existingParticipant._id,
         {
           competition,
-          upload_path: upload_path || existingParticipant.upload_path,
+          upload_path: upload_path.length > 0 ? upload_path : existingParticipant.upload_path,
           total_marks: total_marks !== undefined ? total_marks : existingParticipant.total_marks,
         },
         { new: true }
@@ -61,27 +83,49 @@ exports.createParticipant = async (req, res) => {
   }
 };
 
+// Update participant
 exports.updateParticipant = async (req, res) => {
   try {
     let updateData = { ...req.body };
+    let upload_path = [];
 
-    if (req.file) {
-      if (req.file.size > 20 * 1024 * 1024) {
-        return res.status(400).json({ success: false, message: 'File size must be less than 20MB' });
+    const existingParticipant = await Participant.findById(req.params.id);
+    if (!existingParticipant) {
+      return res.status(404).json({ success: false, message: 'Participant not found' });
+    }
+
+    // Fetch competition details to determine max uploads
+    const competitionDoc = await require('../models/Competition').findById(existingParticipant.competition);
+    if (!competitionDoc) {
+      return res.status(404).json({ success: false, message: 'Competition not found' });
+    }
+    const maxUploads = competitionDoc.name.toLowerCase().includes('photography') ? 15 : 3;
+
+    if (req.files && req.files.length > 0) {
+      // Validate file size (20MB limit per file)
+      for (const file of req.files) {
+        if (file.size > 20 * 1024 * 1024) {
+          return res.status(400).json({ success: false, message: `File ${file.originalname} exceeds 20MB limit` });
+        }
       }
 
-      const existingParticipant = await Participant.findById(req.params.id);
-      if (!existingParticipant) {
-        return res.status(404).json({ success: false, message: 'Participant not found' });
+      // Validate total file count (existing + new <= maxUploads)
+      const existingFileCount = Array.isArray(existingParticipant.upload_path) ? existingParticipant.upload_path.length : 0;
+      const newFileCount = req.files.length;
+      if (existingFileCount + newFileCount > maxUploads) {
+        return res.status(400).json({ success: false, message: `Cannot upload more than ${maxUploads} files. You already have ${existingFileCount} file(s).` });
       }
 
-      if (existingParticipant.upload_path) {
-        deleteFile(existingParticipant.upload_path, 'drawingevent');
-      }
+      // Process new files
+      upload_path = await Promise.all(
+        req.files.map(async (file) => {
+          const fileName = `drawingevent_${Date.now()}_${file.originalname}`;
+          return await processFile(file.buffer, file.mimetype, 'drawingevent', fileName);
+        })
+      );
 
-      const mimetype = req.file.mimetype;
-      const fileName = `drawingevent_${Date.now()}_${req.file.originalname}`;
-      updateData.upload_path = await processFile(req.file.buffer, mimetype, 'drawingevent', fileName);
+      // Append new file paths to existing ones
+      updateData.upload_path = [...(existingParticipant.upload_path || []), ...upload_path];
     }
 
     const participant = await Participant.findByIdAndUpdate(req.params.id, updateData, { new: true })
@@ -133,7 +177,9 @@ exports.deleteParticipant = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Participant not found' });
     }
     if (participant.upload_path) {
-      deleteFile(participant.upload_path, 'drawingevent');
+      for (const path of participant.upload_path) {
+        deleteFile(path, 'drawingevent');
+      }
     }
     res.json({ success: true, message: 'Participant deleted successfully' });
   } catch (err) {

@@ -114,43 +114,43 @@ const DrawingCandidates = () => {
     }
   };
 
-  // Download the image using axios to handle CORS/authenticated requests
-  const handleDownloadImage = async () => {
-    if (previewImage && selectedParticipant) {
-      try {
-        // Fetch the image as a blob
-        const response = await axiosInstance.get(previewImage, {
-          responseType: 'blob',
-          withCredentials: true,
-        });
+  // // Download the image using axios to handle CORS/authenticated requests
+  // const handleDownloadImage = async () => {
+  //   if (previewImage && selectedParticipant) {
+  //     try {
+  //       // Fetch the image as a blob
+  //       const response = await axiosInstance.get(previewImage, {
+  //         responseType: 'blob',
+  //         withCredentials: true,
+  //       });
 
-        // Create a URL for the blob
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+  //       // Create a URL for the blob
+  //       const url = window.URL.createObjectURL(new Blob([response.data]));
 
-        // Determine the filename
-        const filenameFromUrl = previewImage.split('/').pop() || 'drawing';
-        const participantName = selectedParticipant.user?.name
-          ? selectedParticipant.user.name.replace(/\s+/g, '_').toLowerCase()
-          : 'participant';
-        const extension = filenameFromUrl.split('.').pop() || 'jpg';
-        const filename = `${participantName}_drawing.${extension}`;
+  //       // Determine the filename
+  //       const filenameFromUrl = previewImage.split('/').pop() || 'drawing';
+  //       const participantName = selectedParticipant.user?.name
+  //         ? selectedParticipant.user.name.replace(/\s+/g, '_').toLowerCase()
+  //         : 'participant';
+  //       const extension = filenameFromUrl.split('.').pop() || 'jpg';
+  //       const filename = `${participantName}_drawing.${extension}`;
 
-        // Create and trigger the download
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url); // Clean up the blob URL
-      } catch (err) {
-        console.error('Error downloading image:', err);
-        showToast('error', 'Failed to download image');
-      }
-    } else {
-      showToast('error', 'No image available for download');
-    }
-  };
+  //       // Create and trigger the download
+  //       const link = document.createElement('a');
+  //       link.href = url;
+  //       link.download = filename;
+  //       document.body.appendChild(link);
+  //       link.click();
+  //       document.body.removeChild(link);
+  //       window.URL.revokeObjectURL(url); // Clean up the blob URL
+  //     } catch (err) {
+  //       console.error('Error downloading image:', err);
+  //       showToast('error', 'Failed to download image');
+  //     }
+  //   } else {
+  //     showToast('error', 'No image available for download');
+  //   }
+  // };
 
   if (loading) {
     return <div className="text-center p-4 text-gray-600">Loading...</div>;
@@ -215,14 +215,14 @@ const DrawingCandidates = () => {
               />
             )}
           </div>
-          <div className="text-center pb-4">
+          {/* <div className="text-center pb-4">
             <button
               onClick={handleDownloadImage}
               className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
             >
               Download Image
             </button>
-          </div>
+          </div> */}
         </DialogContent>
       </Dialog>
 
