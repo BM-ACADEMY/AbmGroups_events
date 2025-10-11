@@ -38,20 +38,19 @@ export function NavUser({ user }) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">
+              <Avatar className="h-8 w-8 rounded-lg bg-black text-white border border-sidebar-border">
+                <AvatarImage src={user.avatar} alt={user.name} className="object-cover" />
+                <AvatarFallback className="rounded-lg bg-black text-white">
                   {user?.name
-                    ? `${user.name.charAt(0)}${user.name.charAt(
-                        user.name.length - 1
-                      )}`
+                    ? `${user.name.charAt(0)}${user.name.charAt(user.name.length - 1)}`
                     : ""}
                 </AvatarFallback>
               </Avatar>
+
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
                 <span className="text-muted-foreground truncate text-xs">
-                   {user.email ? user.email : user.phone}
+                  {user.email ? user.email : user.phone}
                 </span>
               </div>
               <IconDotsVertical className="ml-auto size-4" />
@@ -70,15 +69,15 @@ export function NavUser({ user }) {
                   <AvatarFallback className="rounded-lg">
                     {user?.name
                       ? `${user.name.charAt(0)}${user.name.charAt(
-                          user.name.length - 1
-                        )}`
+                        user.name.length - 1
+                      )}`
                       : ""}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
                   <span className="text-muted-foreground truncate text-xs">
-                     {user.email ? user.email : user.phone}
+                    {user.email ? user.email : user.phone}
                   </span>
                 </div>
               </div>

@@ -1,3 +1,4 @@
+// MemsUpload.js
 import React, { useState } from 'react';
 import axiosInstance from '@/modules/axios/axios';
 import { showToast } from '@/modules/toast/customToast';
@@ -35,14 +36,13 @@ const MemsUpload = ({ participantId, upload_path, onUploadSuccess }) => {
     }
   };
 
-  // Only disable if upload_path is a non-empty array or string
-  const isDisabled = upload_path && (Array.isArray(upload_path) ? upload_path.length > 0 : !!upload_path);
+  const isDisabled = Array.isArray(upload_path) && upload_path.length > 0;
 
   return (
     <div className="mt-4">
       {isDisabled && (
         <p className="text-gray-600 mb-2">
-          A file has been uploaded successfully. You cannot upload another one.
+          An image has been uploaded. You cannot upload another one.
         </p>
       )}
       <div className="flex flex-col gap-2">
