@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/modules/AuthContext/AuthContext';
 import axiosInstance from '@/modules/axios/axios';
 import { showToast } from '@/modules/toast/customToast';
@@ -7,8 +8,8 @@ import MemsUpload from './MemsUpload/MemsUpload';
 import SkidUpload from './SkidUpload/SkidUpload';
 import CodingSubmission from './CodingSubmission/CodingSubmission';
 import PhotographyUpload from './PhotographyUpload/PhotographyUpload';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const Competition = () => {
@@ -18,13 +19,14 @@ const Competition = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [previewImages, setPreviewImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const navigate = useNavigate();
 
   const maxUploads = {
     logo: 3,
     memes: 3,
     skid: 3,
     photography: 15,
-    coding: 0, // Coding doesn't use uploads
+    coding: 0,
   };
 
   useEffect(() => {
@@ -156,7 +158,13 @@ const Competition = () => {
         />
       );
     } else if (competitionName.includes('coding')) {
-      return <CodingSubmission />;
+      return (
+        <Button
+          className="mt-4"
+        >
+          Take a Test
+        </Button>
+      );
     }
     return null;
   };

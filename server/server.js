@@ -84,6 +84,9 @@ app.use("/api/roles", require("./routes/roleRoutes"));
 app.use("/api/competitions", require("./routes/competitionRoutes"));
 app.use("/api/prizes", require("./routes/prizeRoutes"));
 app.use("/api/participants", require("./routes/participantRoutes"));
+app.use("/api/pattern-competitions", require("./routes/patternCompetitionRoutes"));
+app.use("/api/pattern-marks", require("./routes/patternMarksRoutes"));
+// app.use('/api/pattern-submissions', require('./routes/patternSubmissionRoutes'));
 
 // ====== Database ======
 connectDB();
