@@ -5,7 +5,7 @@ import {LayoutDashboard, CalendarPlus,Trophy, UserPlus2,BookImage, Video, Image,
 
 export const sidebarMenuItems = {
   admin: [
-    // { url: "/admin-dashboard", title: "Dashboard", icon: LayoutDashboard },
+    { url: "/admin-dashboard", title: "Dashboard", icon: LayoutDashboard },
     { url: "/admin-dashboard/userregistration", title: "User Registration", icon: UserPlus2 },
     { url: "/admin-dashboard/competition", title: "Competitions", icon: CalendarPlus },
     { url: "/admin-dashboard/prices", title: "Prices", icon: Trophy },
@@ -15,13 +15,12 @@ export const sidebarMenuItems = {
     { url: "/admin-dashboard/memescandidates", title: "Memes Candidates", icon: Image },
     { url: "/admin-dashboard/logocandidates", title: "Logo Candidates", icon: ImagePlus },
     { url: "/admin-dashboard/photographycandidates", title: "Photography Candidates", icon: ImagePlus },
+    { url: "/admin-dashboard/pattercodingiamge", title: "Patterncoding Candidates", icon: ImagePlus },
   ],
   college_student: [
-    // { url: "/college_student-dashboard", title: "Dashboard", icon: LayoutDashboard },
     { url: "/college_student-dashboard/competition", title: "Competition", icon: CalendarPlus },
   ],
   school_student: [
-    // { url: "/school_student-dashboard", title: "Dashboard", icon: LayoutDashboard },
     { url: "/school_student-dashboard/competition", title: "Competition", icon: CalendarPlus },
   ],
 };
