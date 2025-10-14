@@ -154,3 +154,111 @@ exports.submitRound = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+// Update Round 3 marks
+// Update Round 3 marks - FIXED VERSION
+// patternMarksController.js
+exports.updateRound3Marks = async (req, res) => {
+  try {
+    const { participantId, marks, competitionId } = req.body; // Add competitionId to request body
+
+    // Validate input
+    if (!participantId || !Array.isArray(marks)) {
+      return res.status(400).json({ success: false, message: 'Missing required fields: participantId and marks array' });
+    }
+
+    // Find marks
+    const patternMarks = await PatternMarks.findOne({ participant: participantId }).populate('participant');
+    if (!patternMarks) {
+      return res.status(404).json({ success: false, message: 'Marks not found for participant' });
+    }
+
+    // Find competition to validate marks
+    const participant = patternMarks.participant;
+    // Use provided competitionId or fallback to a default PatternCompetition
+    const competition = await PatternCompetition.findById(competitionId || '68ece9371ea934eb2d207c5c'); // Replace with actual logic
+    if (!competition) {
+      return res.status(404).json({ success: false, message: 'Competition not found' });
+    }
+
+    // Validate marks against round3_image_notes
+    const round3Questions = competition.round3_image_notes;
+    if (marks.length !== round3Questions.length) {
+      return res.status(400).json({ success: false, message: 'Number of marks must match number of Round 3 questions' });
+    }
+
+    // Validate each mark and calculate total
+    let totalRound3Score = 0;
+    const evaluatedAnswers = marks.map(mark => {
+      const question = round3Questions.find(q => q._id.toString() === mark.questionId);
+      if (!question) {
+        throw new Error(`Invalid questionId: ${mark.questionId}`);
+      }
+      if (mark.score < 0 || mark.score > question.marks) {
+        throw new Error(`Score for question ${mark.questionId} must be between 0 and ${question.marks}`);
+      }
+      
+      totalRound3Score += mark.score;
+      return {
+        questionId: mark.questionId,
+        evaluated_score: mark.score,
+        evaluated_at: new Date()
+      };
+    });
+
+    // Update or merge round3_answer_notes with evaluation scores
+    patternMarks.round3_answer_notes = patternMarks.round3_answer_notes.map((answer, index) => {
+      const evaluation = evaluatedAnswers.find(e => e.questionId.toString() === answer.questionId.toString());
+      if (evaluation) {
+        return {
+          ...answer,
+          evaluated_score: evaluation.evaluated_score,
+          evaluated_at: evaluation.evaluated_at
+        };
+      }
+      return answer;
+    });
+
+    // Update total scores
+    patternMarks.round3_score = totalRound3Score;
+    patternMarks.total_score = (patternMarks.round1_score || 0) + (patternMarks.round2_score || 0) + totalRound3Score;
+    patternMarks.evaluated = true;
+    
+    await patternMarks.save();
+
+    // Update Participant total_marks
+    await Participant.findByIdAndUpdate(participantId, { total_marks: patternMarks.total_score });
+
+    res.status(200).json({ success: true, data: patternMarks });
+  } catch (error) {
+    console.error('Error updating Round 3 marks:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Add this method to your patternMarksController.js
+exports.getMarksByParticipant = async (req, res) => {
+  try {
+    const { participantId } = req.params;
+    
+    if (!participantId) {
+      return res.status(400).json({ success: false, message: 'Participant ID is required' });
+    }
+
+    const marks = await PatternMarks.findOne({ participant: participantId })
+      .populate('participant', 'user competition');
+    
+    if (!marks) {
+      // Return empty marks object instead of 404 to avoid frontend errors
+      return res.status(200).json({ 
+        success: true, 
+        data: null 
+      });
+    }
+
+    res.status(200).json({ success: true, data: marks });
+  } catch (error) {
+    console.error('Error fetching marks by participant:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

@@ -9,6 +9,7 @@ import Logo from '../Admin/Logo/Logo';
 import Memes from '../Admin/Memes/Memes';
 import Photgraphy from '../Admin/Photography/Photography';
 import Pattercoding from '../Admin/Pattercoding/Pattercoding';
+import Pattercodingiamge from '../Admin/Pattercodingiamge/Pattercodingiamge';
 
 export const adminRoutes = [
   {
@@ -90,6 +91,14 @@ export const adminRoutes = [
     element: (
       <PrivateRoute allowedRole="admin">
         <Pattercoding/>
+      </PrivateRoute>
+    ),
+  },
+    {
+    path: '/admin-dashboard/pattercodingiamge',
+    element: (
+      <PrivateRoute allowedRole="admin">
+        <Pattercodingiamge/>
       </PrivateRoute>
     ),
   },
