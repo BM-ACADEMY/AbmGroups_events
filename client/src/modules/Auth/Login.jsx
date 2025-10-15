@@ -75,7 +75,7 @@ const Login = () => {
           )}
         </button>
 
-        <div className="text-gray-400 text-xs mt-6 text-center">
+        {/* <div className="text-gray-400 text-xs mt-6 text-center">
           By continuing, you agree to our{" "}
           <a href="#" className="text-indigo-500 underline hover:text-indigo-600">
             Terms of Service
@@ -85,14 +85,14 @@ const Login = () => {
             Privacy Policy
           </a>
           .
-        </div>
-
+        </div> */}
+{/* 
         <p className="text-gray-600 text-sm mt-4 text-center">
           Don't have an account?{" "}
           <Link to="/register" className="text-indigo-500 font-medium hover:text-indigo-600">
             Sign up
           </Link>
-        </p>
+        </p> */}
       </form>
     </div>
   );
