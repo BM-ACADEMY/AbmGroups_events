@@ -45,7 +45,7 @@ const Competition = () => {
   const maxUploads = {
     logo: 3,
     memes: 3,
-    skid: 3,
+    skid: 3, // Defined here but overridden in getUploadSlotsInfo for skid
     photography: 15,
     coding: 0,
   };
@@ -59,9 +59,12 @@ const Competition = () => {
 
       try {
         const response = await axiosInstance.get('/participants');
-        const participants = response.data.data;
+        const participants = response.data.data || [];
 
-        const myParticipant = participants.find(p => p.user && p.user._id === user._id);
+        // Enhanced null-checking for participant.user
+        const myParticipant = participants.find(p => 
+          p && p.user && typeof p.user === 'object' && p.user._id === user._id
+        );
 
         if (myParticipant) {
           const compResponse = await axiosInstance.get(`/competitions/${myParticipant.competition._id}`);
@@ -75,7 +78,9 @@ const Competition = () => {
           }
 
           const marksResponse = await axiosInstance.get('/pattern-marks');
-          const userMarks = marksResponse.data.data.find(m => m.participant._id === myParticipant._id);
+          const userMarks = marksResponse.data.data.find(m => 
+            m && m.participant && typeof m.participant === 'object' && m.participant._id === myParticipant._id
+          );
 
           setMyCompetition({
             ...competitionData,
@@ -88,11 +93,13 @@ const Competition = () => {
           setCompletedRounds(userMarks?.completed_rounds || []);
         } else {
           console.log('No matching participant found for user:', user._id);
+          showToast('info', 'No competition found for this user.');
           setMyCompetition(null);
         }
       } catch (error) {
         console.error('Error fetching participant:', error);
         showToast('error', 'Failed to fetch your competition');
+        setMyCompetition(null);
       } finally {
         setFetchLoading(false);
       }
@@ -228,7 +235,10 @@ const Competition = () => {
   const getUploadSlotsInfo = () => {
     if (!myCompetition) return { usedSlots: 0, remainingSlots: 0 };
     const competitionName = myCompetition.name.toLowerCase();
-    const max = maxUploads[Object.keys(maxUploads).find(key => competitionName.includes(key))] || 3;
+    // Override maxUploads for skid to 1
+    const max = competitionName.includes('skid') 
+      ? 1 
+      : maxUploads[Object.keys(maxUploads).find(key => competitionName.includes(key))] || 3;
     const usedSlots = Array.isArray(myCompetition.upload_path) ? myCompetition.upload_path.length : 0;
     const remainingSlots = max - usedSlots;
     return { usedSlots, remainingSlots };
@@ -290,7 +300,6 @@ const Competition = () => {
     } else if (competitionName.includes('coding')) {
       return (
         <div className="space-y-6">
-          {/* Header */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
@@ -304,8 +313,6 @@ const Competition = () => {
               </p>
             </CardContent>
           </Card>
-
-          {/* Progress Tracker */}
           <Card>
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
@@ -322,8 +329,6 @@ const Competition = () => {
               />
             </CardContent>
           </Card>
-
-          {/* Round Buttons */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               {
@@ -382,8 +387,6 @@ const Competition = () => {
               </Card>
             ))}
           </div>
-
-          {/* Scores Card */}
           {patternMarks && (
             <Card>
               <CardHeader className="pb-3">
@@ -418,8 +421,6 @@ const Competition = () => {
               </CardContent>
             </Card>
           )}
-
-          {/* Instructions */}
           {!completedRounds.includes('round1') && (
             <Card>
               <CardContent className="p-4 flex items-start gap-3">
@@ -477,7 +478,6 @@ const Competition = () => {
         {renderCompetitionComponent()}
       </div>
 
-      {/* Image Preview Modal */}
       <Dialog open={showImageModal} onOpenChange={handleCloseModal} modal={true}>
         <DialogContent className="p-0 max-w-3xl">
           <DialogHeader className="flex justify-between items-center p-4">
@@ -543,7 +543,6 @@ const Competition = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Test Modal */}
       <Dialog open={showTestModal} onOpenChange={handleCloseModal} modal={true}>
         <DialogContent className="max-w-2xl max-h-[80vh]">
           <DialogHeader>

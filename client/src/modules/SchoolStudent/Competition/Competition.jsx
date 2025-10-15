@@ -4,7 +4,7 @@ import axiosInstance from '@/modules/axios/axios';
 import { showToast } from '@/modules/toast/customToast';
 import DrawingUpload from './DrawingUpload';
 import QuizTest from './QuizTest';
-import { Upload, FileText } from 'lucide-react'; // Import Lucide icons
+import { Upload, FileText } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Competition = () => {
@@ -13,8 +13,8 @@ const Competition = () => {
   const [fetchLoading, setFetchLoading] = useState(true);
   const [showDrawingUpload, setShowDrawingUpload] = useState(false);
   const [showQuizTest, setShowQuizTest] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false); // State for image modal
-  const [selectedImage, setSelectedImage] = useState(null); // State for selected image URL
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     const fetchMyCompetition = async () => {
@@ -25,15 +25,21 @@ const Competition = () => {
 
       try {
         const response = await axiosInstance.get('/participants');
-        const participants = response.data.data;
-        const myParticipant = participants.find(p => p.user._id === user._id);
+        const participants = response.data.data || [];
+        
+        const myParticipant = participants.find(p => 
+          p && 
+          p.user && 
+          p.user._id && 
+          p.user._id === user._id
+        );
 
-        if (myParticipant) {
+        if (myParticipant && myParticipant.competition && myParticipant.competition._id) {
           const compResponse = await axiosInstance.get(`/competitions/${myParticipant.competition._id}`);
           setMyCompetition({
             ...compResponse.data,
             participantId: myParticipant._id,
-            upload_path: myParticipant.upload_path,
+            upload_path: myParticipant.upload_path || [], // Ensure upload_path is always an array
             total_marks: myParticipant.total_marks,
           });
         } else {
@@ -42,6 +48,7 @@ const Competition = () => {
       } catch (error) {
         console.error('Error fetching participant:', error);
         showToast('error', 'Failed to fetch your competition');
+        setMyCompetition(null);
       } finally {
         setFetchLoading(false);
       }
@@ -65,19 +72,17 @@ const Competition = () => {
   const handleUploadSuccess = (updatedParticipant) => {
     setMyCompetition({
       ...myCompetition,
-      upload_path: updatedParticipant.upload_path,
+      upload_path: updatedParticipant.upload_path || [], // Ensure upload_path is always an array
     });
     setShowDrawingUpload(false);
     showToast('success', 'Drawing uploaded successfully');
   };
 
-  // Open modal with the selected image
   const handleViewImage = (imageUrl) => {
     setSelectedImage(imageUrl);
     setShowImageModal(true);
   };
 
-  // Close the image modal
   const handleCloseModal = () => {
     setShowImageModal(false);
     setSelectedImage(null);
@@ -118,26 +123,30 @@ const Competition = () => {
         <p className="text-gray-600 mb-2">User Type: {myCompetition.role.name}</p>
         <p className="text-gray-600 mb-2">Total Marks: {myCompetition.total_marks}</p>
         <p className="text-gray-600 mb-2">Team Based: {myCompetition.is_team_based ? 'Yes' : 'No'}</p>
-        {myCompetition.upload_path && (
+        {myCompetition.upload_path?.length > 0 && (
           <p className="text-gray-600 mb-4">
             Uploaded Drawing:{' '}
-            <button
-              onClick={() => handleViewImage(myCompetition.upload_path)}
-              className="text-blue-500 underline hover:text-blue-600"
-            >
-              View
-            </button>
+            {myCompetition.upload_path.map((imageUrl, index) => (
+              <button
+                key={index}
+                onClick={() => handleViewImage(imageUrl)}
+                className="text-blue-500 underline hover:text-blue-600 mr-2"
+              >
+                View {index + 1}
+              </button>
+            ))}
           </p>
         )}
         <div className="flex gap-2">
           {myCompetition.name.toLowerCase().includes('drawing') && (
             <button
-              className={`flex items-center gap-2 px-4 py-2 rounded text-white transition-colors ${myCompetition.upload_path
+              className={`flex items-center gap-2 px-4 py-2 rounded text-white transition-colors ${
+                myCompetition.upload_path?.length > 0
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-500 hover:bg-blue-600'
-                }`}
+              }`}
               onClick={handleDrawingUploadClick}
-              disabled={!!myCompetition.upload_path}
+              disabled={myCompetition.upload_path?.length > 0}
             >
               <Upload size={20} />
               Upload Drawing
