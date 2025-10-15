@@ -118,7 +118,7 @@ const ParticipantCard = ({ participant, onEvaluate }) => {
   );
 };
 
-// Compact Evaluation Modal
+// Compact Evaluation Modal (unchanged)
 const EvaluationModal = ({ 
   isOpen, 
   onClose, 
@@ -161,14 +161,16 @@ const EvaluationModal = ({
                 </div>
               </div>
               <DialogClose asChild>
-                
+                <Button variant="ghost" size="sm">
+                  <X className="h-4 w-4" />
+                </Button>
               </DialogClose>
             </div>
           </DialogHeader>
 
           {/* Compact Main Content */}
           <div className="flex-1 overflow-auto p-4 space-y-3">
-            {/* Compact Image */}
+            {/* Image */}
             <div className="bg-card rounded-md overflow-hidden border">
               {currentQuestion.image_url ? (
                 <img
@@ -179,7 +181,7 @@ const EvaluationModal = ({
                     e.target.style.display = 'none';
                     e.currentTarget.innerHTML = `
                       <div class="flex items-center justify-center h-40 text-muted-foreground text-xs">
-                        <ImageIcon className="h-4 w-4 mr-1" />
+                        <ImageIcon class="h-4 w-4 mr-1" />
                         <span>No image</span>
                       </div>
                     `;
@@ -193,7 +195,7 @@ const EvaluationModal = ({
               )}
             </div>
 
-            {/* Compact Question Section */}
+            {/* Question Section */}
             <Card className="p-3">
               <div className="flex justify-between items-start mb-2">
                 <h4 className="font-medium text-sm">Q{currentImageIndex + 1}</h4>
@@ -210,7 +212,7 @@ const EvaluationModal = ({
                 </pre>
               </div>
 
-              {/* Compact Evaluation Input */}
+              {/* Evaluation Input */}
               <div className="space-y-1 mt-2">
                 <Label className="text-xs font-medium">Score (0-{currentQuestion.max_marks})</Label>
                 <div className="flex items-center space-x-2">
@@ -229,7 +231,7 @@ const EvaluationModal = ({
               </div>
             </Card>
 
-            {/* Compact Navigation */}
+            {/* Navigation */}
             <div className="flex items-center justify-between pt-2">
               <Button
                 variant="ghost"
@@ -259,7 +261,7 @@ const EvaluationModal = ({
             </div>
           </div>
 
-          {/* Compact Footer */}
+          {/* Footer */}
           <DialogFooter className="p-3 border-t bg-muted/30">
             <div className="flex w-full justify-between gap-2">
               <DialogClose asChild>
@@ -304,6 +306,7 @@ const Pattercodingimage = () => {
         setLoading(true);
         setError(null);
         
+        // Fetch marks
         const marksResponse = await axiosInstance.get('/pattern-marks', { withCredentials: true });
         const allMarks = marksResponse.data.data || [];
         const participantsWithRound3 = allMarks.filter(
@@ -316,6 +319,7 @@ const Pattercodingimage = () => {
           return;
         }
 
+        // Fetch pattern competitions with better error-handling
         const patternCompResponse = await axiosInstance.get('/pattern-competitions', {
           withCredentials: true,
         });
@@ -323,11 +327,18 @@ const Pattercodingimage = () => {
         if (patternComps.length === 0) {
           throw new Error('No PatternCompetition found');
         }
-        const activePatternComp = patternComps[0];
+        const activePatternComp = patternComps[0]; // Use first valid one
         setPatternCompetition(activePatternComp);
 
-        const enhancedParticipants = await Promise.all(
-          participantsWithRound3.map(async (marks) => {
+        // Fetch participants with individual error-handling using Promise.allSettled
+        const fetchPromises = participantsWithRound3.map(async (marks) => {
+          // Validate participant ID
+          if (!marks.participant?._id) {
+            console.warn('Invalid participant ID in marks:', marks);
+            return null; // Skip invalid
+          }
+
+          try {
             const participantResponse = await axiosInstance.get(`/participants/${marks.participant._id}`, {
               withCredentials: true,
             });
@@ -347,12 +358,24 @@ const Pattercodingimage = () => {
             });
 
             return { ...participant, patternMarks: marks, round3Data };
-          })
-        );
+          } catch (participantErr) {
+            console.error(`Failed to fetch participant ${marks.participant._id}:`, participantErr.response?.data?.message || participantErr.message);
+            return null; // Skip this participant but continue with others
+          }
+        });
+
+        const results = await Promise.allSettled(fetchPromises);
+        const enhancedParticipants = results
+          .map((result, index) => result.status === 'fulfilled' ? result.value : null)
+          .filter(Boolean); // Remove nulls (failed or invalid participants)
+
+        if (enhancedParticipants.length === 0) {
+          throw new Error('No valid participants could be loaded');
+        }
 
         setParticipants(enhancedParticipants);
       } catch (err) {
-        const errMsg = err.response?.data?.message || 'Failed to fetch participants';
+        const errMsg = err.response?.data?.message || err.message || 'Failed to fetch participants';
         setError(errMsg);
         showToast('error', errMsg);
       } finally {
@@ -522,7 +545,7 @@ const Pattercodingimage = () => {
 
       {participants.length === 0 ? (
         <Card>
-          <CardContent className="text-center py-12">
+          <CardContent className="text-center py-8">
             <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">No submissions yet</h3>
             <p className="text-muted-foreground">
