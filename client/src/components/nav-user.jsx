@@ -82,15 +82,7 @@ export function NavUser({ user }) {
                 </div>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                className="cursor-pointer"
-              >
-                <IconUserCircle className="mr-2" />
-                Account
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
+           
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={logout}
