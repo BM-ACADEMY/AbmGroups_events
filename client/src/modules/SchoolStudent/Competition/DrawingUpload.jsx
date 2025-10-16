@@ -42,7 +42,7 @@ const DrawingUpload = ({ participantId, onClose, onUploadSuccess }) => {
 
       if (response.data.success) {
         onUploadSuccess(response.data.data);
-        showToast("success", "Drawing(s) uploaded successfully");
+        // showToast("success", "Drawing(s) uploaded successfully");
         onClose();
       } else {
         showToast("error", response.data.message || "Failed to upload drawing");

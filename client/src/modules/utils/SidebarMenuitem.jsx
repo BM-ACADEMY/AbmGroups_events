@@ -18,6 +18,7 @@ export const sidebarMenuItems = {
     { url: "/admin-dashboard/pattercodingiamge", title: "Patterncoding Candidates", icon: ImagePlus },
   ],
   college_student: [
+    { url: "/college_student-dashboard", title: "Dashbaord", icon: LayoutDashboard },
     { url: "/college_student-dashboard/competition", title: "Competition", icon: CalendarPlus },
   ],
   school_student: [

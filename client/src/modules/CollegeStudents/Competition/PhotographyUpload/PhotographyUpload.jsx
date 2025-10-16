@@ -8,7 +8,7 @@ const PhotographyUpload = ({ participantId, upload_path, onUploadSuccess }) => {
   const [files, setFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  const maxUploads = 15;
+  const maxUploads = 5;
   const existingFileCount = Array.isArray(upload_path) ? upload_path.length : 0;
   const remainingUploads = maxUploads - existingFileCount;
 

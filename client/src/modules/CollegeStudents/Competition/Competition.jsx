@@ -45,8 +45,8 @@ const Competition = () => {
   const maxUploads = {
     logo: 3,
     memes: 3,
-    skid: 3, // Defined here but overridden in getUploadSlotsInfo for skid
-    photography: 15,
+    reel: 3, // Defined here but overridden in getUploadSlotsInfo for skid
+    photography: 5,
     coding: 0,
   };
 
@@ -236,7 +236,7 @@ const Competition = () => {
     if (!myCompetition) return { usedSlots: 0, remainingSlots: 0 };
     const competitionName = myCompetition.name.toLowerCase();
     // Override maxUploads for skid to 1
-    const max = competitionName.includes('skid') 
+    const max = competitionName.includes('reel') 
       ? 1 
       : maxUploads[Object.keys(maxUploads).find(key => competitionName.includes(key))] || 3;
     const usedSlots = Array.isArray(myCompetition.upload_path) ? myCompetition.upload_path.length : 0;
@@ -281,7 +281,7 @@ const Competition = () => {
           onUploadSuccess={handleUploadSuccess}
         />
       );
-    } else if (competitionName.includes('skid')) {
+    } else if (competitionName.includes('reel')) {
       return (
         <SkidUpload
           participantId={myCompetition.participantId}
@@ -497,7 +497,7 @@ const Competition = () => {
                 >
                   <ChevronLeft size={24} />
                 </Button>
-                {myCompetition?.name.toLowerCase().includes('skid') ? (
+                {myCompetition?.name.toLowerCase().includes('reel') ? (
                   <video
                     src={previewImages[currentImageIndex]}
                     className="max-w-full max-h-[60vh] rounded-lg"
