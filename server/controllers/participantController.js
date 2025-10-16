@@ -12,7 +12,7 @@ exports.createParticipant = async (req, res) => {
     if (!competitionDoc) {
       return res.status(404).json({ success: false, message: 'Competition not found' });
     }
-    const maxUploads = competitionDoc.name.toLowerCase().includes('photography') ? 15 : 3;
+    const maxUploads = competitionDoc.name.toLowerCase().includes('photography') ? 5 : 3;
 
     if (req.files && req.files.length > 0) {
       // Validate file size (20MB limit per file)
@@ -99,7 +99,7 @@ exports.updateParticipant = async (req, res) => {
     if (!competitionDoc) {
       return res.status(404).json({ success: false, message: 'Competition not found' });
     }
-    const maxUploads = competitionDoc.name.toLowerCase().includes('photography') ? 15 : 3;
+    const maxUploads = competitionDoc.name.toLowerCase().includes('photography') ? 5 : 3;
 
     if (req.files && req.files.length > 0) {
       // Validate file size (20MB limit per file)

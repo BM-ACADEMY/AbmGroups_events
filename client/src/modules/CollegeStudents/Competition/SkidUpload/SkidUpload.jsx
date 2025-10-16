@@ -50,7 +50,7 @@ const SkidUpload = ({ participantId, upload_path, onUploadSuccess }) => {
 
       if (response.data.success) {
         onUploadSuccess(response.data.data);
-        showToast('success', 'Video uploaded successfully');
+        // showToast('success', 'Video uploaded successfully');
       } else {
         showToast('error', response.data.message || 'Failed to upload video');
       }
