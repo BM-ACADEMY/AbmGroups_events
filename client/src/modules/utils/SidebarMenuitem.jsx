@@ -8,7 +8,7 @@ export const sidebarMenuItems = {
     { url: "/admin-dashboard", title: "Dashboard", icon: LayoutDashboard },
     { url: "/admin-dashboard/userregistration", title: "User Registration", icon: UserPlus2 },
     { url: "/admin-dashboard/competition", title: "Competitions", icon: CalendarPlus },
-    { url: "/admin-dashboard/prices", title: "Prices", icon: Trophy },
+    // { url: "/admin-dashboard/prices", title: "Prices", icon: Trophy },
     { url: "/admin-dashboard/patterncoding", title: "Pattern Coding", icon: NotebookIcon },
     { url: "/admin-dashboard/drawingcandidates", title: "Drawing Candidates", icon: BookImage },
     { url: "/admin-dashboard/skidcandidates", title: "Skid Candidates", icon: Video },
