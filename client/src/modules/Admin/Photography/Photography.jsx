@@ -4,9 +4,9 @@ import { showToast } from '@/modules/toast/customToast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit, Image as ImageIcon, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 
-const Logo = () => {
+const Photography = () => {
   const [participants, setParticipants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -19,49 +19,34 @@ const Logo = () => {
 
   const maxUploads = 3;
 
-  // Fetch participants for the logo competition
   useEffect(() => {
-    const fetchLogoParticipants = async () => {
+    const fetchParticipants = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance.get('/participants', {
-          withCredentials: true,
-        });
-
-        console.log('Participants API Response:', response.data);
-
-        const logoParticipants = response.data.data.filter(
-          (participant) =>
-            participant.competition?.name &&
-            participant.competition.name.toLowerCase() === 'photography' &&
-            participant.upload_path &&
-            Array.isArray(participant.upload_path)
+        const response = await axiosInstance.get('/participants', { withCredentials: true });
+        const photographyParticipants = response.data.data.filter(
+          (p) =>
+            p.competition?.name?.toLowerCase() === 'photography' &&
+            Array.isArray(p.upload_path) &&
+            p.upload_path.length > 0
         );
-
-        console.log('Filtered Logo Participants:', logoParticipants);
-
-        setParticipants(logoParticipants);
+        setParticipants(photographyParticipants);
       } catch (err) {
         const errMsg = err.response?.data?.message || 'Failed to fetch participants';
-        console.error('Error fetching participants:', err);
         setError(errMsg);
         showToast('error', errMsg);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchLogoParticipants();
+    fetchParticipants();
   }, []);
 
-  // Handle image loading errors
   const handleImageError = (e) => {
-    console.error('Error loading image:', e.target.src);
     e.target.style.display = 'none';
     showToast('error', 'Failed to load image');
   };
 
-  // Open image preview modal with all images for the participant
   const handleViewImages = (participant) => {
     setPreviewImages(participant.upload_path || []);
     setCurrentImageIndex(0);
@@ -69,41 +54,22 @@ const Logo = () => {
     setShowPreviewModal(true);
   };
 
-  // Navigate to next image
-  const handleNextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % previewImages.length);
-  };
+  const handleNextImage = () => setCurrentImageIndex((prev) => (prev + 1) % previewImages.length);
+  const handlePrevImage = () => setCurrentImageIndex((prev) => (prev - 1 + previewImages.length) % previewImages.length);
 
-  // Navigate to previous image
-  const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + previewImages.length) % previewImages.length);
-  };
-
-  // Open marks modal and initialize marks input
   const handleOpenMarksModal = (participant) => {
     setSelectedParticipant(participant);
     setMarksInput(participant.total_marks?.toString() || '');
     setShowMarksModal(true);
   };
 
-  // Handle marks input change in modal
-  const handleMarksChange = (value) => {
-    setMarksInput(value);
-  };
+  const handleMarksChange = (value) => setMarksInput(value);
 
-  // Submit marks to backend
   const handleSubmitMarks = async () => {
-    if (!selectedParticipant) {
-      showToast('error', 'No participant selected');
-      return;
-    }
-
+    if (!selectedParticipant) return showToast('error', 'No participant selected');
     const parsedMarks = parseFloat(marksInput);
-
-    if (isNaN(parsedMarks) || parsedMarks < 0 || parsedMarks > 100) {
-      showToast('error', 'Please enter a valid mark between 0 and 100');
-      return;
-    }
+    if (isNaN(parsedMarks) || parsedMarks < 0 || parsedMarks > 100)
+      return showToast('error', 'Please enter a valid mark between 0 and 100');
 
     try {
       const response = await axiosInstance.put(
@@ -111,44 +77,52 @@ const Logo = () => {
         { total_marks: parsedMarks },
         { withCredentials: true }
       );
-
       setParticipants((prev) =>
-        prev.map((p) =>
-          p._id === selectedParticipant._id
-            ? { ...p, total_marks: response.data.data.total_marks }
-            : p
-        )
+        prev.map((p) => (p._id === selectedParticipant._id ? { ...p, total_marks: response.data.data.total_marks } : p))
       );
-
       showToast('success', 'Marks updated successfully');
       setShowMarksModal(false);
     } catch (err) {
       const errMsg = err.response?.data?.message || 'Failed to update marks';
-      console.error('Error updating marks:', err);
       showToast('error', errMsg);
     }
   };
 
-  // Calculate used and remaining slots
   const getUploadSlotsInfo = (upload_path) => {
-    const usedSlots = Array.isArray(upload_path) ? upload_path.length : 0;
-    const remainingSlots = maxUploads - usedSlots;
-    return { usedSlots, remainingSlots };
+    const used = Array.isArray(upload_path) ? upload_path.length : 0;
+    return { usedSlots: used, remainingSlots: maxUploads - used };
   };
 
-  if (loading) {
-    return <div className="text-center p-4 text-gray-600">Loading...</div>;
-  }
+  // Download currently displayed image
+  const handleDownloadImage = async () => {
+    if (!previewImages.length) return showToast('error', 'No image available');
+    const imageUrl = previewImages[currentImageIndex];
+    const participantName = selectedParticipant?.user?.name || 'Participant';
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const ext = imageUrl.split('.').pop() || 'jpg';
+      link.download = `${participantName.replace(/\s+/g, '_')}_photo_${currentImageIndex + 1}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      showToast('error', 'Failed to download image');
+    }
+  };
 
-  if (error) {
-    return <div className="text-center p-4 text-red-500">Error: {error}</div>;
-  }
+  if (loading) return <div className="text-center p-4 text-gray-600">Loading...</div>;
+  if (error) return <div className="text-center p-4 text-red-500">Error: {error}</div>;
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 text-gray-800">Logo Competition Participants</h1>
+      <h1 className="text-2xl font-bold mb-4 text-gray-800">Photography Competition Participants</h1>
       {participants.length === 0 ? (
-        <p className="text-gray-500">No participants with uploaded logos found.</p>
+        <p className="text-gray-500">No participants with uploaded photos found.</p>
       ) : (
         <Table>
           <TableHeader>
@@ -162,35 +136,27 @@ const Logo = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {participants.map((participant) => {
-              const { usedSlots, remainingSlots } = getUploadSlotsInfo(participant.upload_path);
+            {participants.map((p) => {
+              const { usedSlots, remainingSlots } = getUploadSlotsInfo(p.upload_path);
               return (
-                <TableRow key={participant._id}>
-                  <TableCell>{participant.user?.name || 'Unknown User'}</TableCell>
-                  <TableCell>{participant.user?.phone || 'N/A'}</TableCell>
-                  <TableCell>{participant.user?.email || 'N/A'}</TableCell>
-                  <TableCell>{participant.total_marks || 0}</TableCell>
+                <TableRow key={p._id}>
+                  <TableCell>{p.user?.name || 'Unknown User'}</TableCell>
+                  <TableCell>{p.user?.phone || 'N/A'}</TableCell>
+                  <TableCell>{p.user?.email || 'N/A'}</TableCell>
+                  <TableCell>{p.total_marks || 0}</TableCell>
                   <TableCell>{`${usedSlots} used, ${remainingSlots} remaining`}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleOpenMarksModal(participant)}
-                        aria-label="Edit marks"
-                      >
-                        <Edit size={16} className="mr-2" />
-                        Marks
+                      <Button variant="outline" size="sm" onClick={() => handleOpenMarksModal(p)}>
+                        <Edit size={16} className="mr-2" /> Marks
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleViewImages(participant)}
-                        disabled={!participant.upload_path || participant.upload_path.length === 0}
-                        aria-label="View images"
+                        onClick={() => handleViewImages(p)}
+                        disabled={!p.upload_path || p.upload_path.length === 0}
                       >
-                        <ImageIcon size={16} className="mr-2" />
-                        View Images
+                        <ImageIcon size={16} className="mr-2" /> View Images
                       </Button>
                     </div>
                   </TableCell>
@@ -201,16 +167,19 @@ const Logo = () => {
         </Table>
       )}
 
-      {/* Image Preview Modal with Navigation */}
+      {/* Image Preview Modal with Download */}
       <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal} modal={true}>
         <DialogContent className="p-0 max-w-3xl">
           <DialogHeader className="flex justify-between items-center p-4">
             <DialogTitle className="text-lg font-semibold text-gray-800">
               Images for {selectedParticipant?.user?.name || 'Participant'}
             </DialogTitle>
+            <Button variant="ghost" size="sm" onClick={handleDownloadImage} className="flex items-center gap-1">
+              <Download size={16} /> Download
+            </Button>
           </DialogHeader>
           <div className="relative flex items-center justify-center p-4">
-            {previewImages.length > 0 && (
+            {previewImages.length > 0 ? (
               <>
                 <Button
                   variant="ghost"
@@ -218,7 +187,6 @@ const Logo = () => {
                   className="absolute left-4"
                   onClick={handlePrevImage}
                   disabled={previewImages.length <= 1}
-                  aria-label="Previous image"
                 >
                   <ChevronLeft size={24} />
                 </Button>
@@ -234,13 +202,11 @@ const Logo = () => {
                   className="absolute right-4"
                   onClick={handleNextImage}
                   disabled={previewImages.length <= 1}
-                  aria-label="Next image"
                 >
                   <ChevronRight size={24} />
                 </Button>
               </>
-            )}
-            {previewImages.length === 0 && (
+            ) : (
               <p className="text-gray-500">No images available</p>
             )}
           </div>
@@ -254,7 +220,7 @@ const Logo = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Marks Input Modal */}
+      {/* Marks Modal */}
       <Dialog open={showMarksModal} onOpenChange={setShowMarksModal} modal={true}>
         <DialogContent className="p-6">
           <DialogHeader>
@@ -272,10 +238,7 @@ const Logo = () => {
               min="0"
               max="100"
             />
-            <Button
-              onClick={handleSubmitMarks}
-              className="bg-blue-500 text-white hover:bg-blue-600"
-            >
+            <Button onClick={handleSubmitMarks} className="bg-blue-500 text-white hover:bg-blue-600">
               Submit Marks
             </Button>
           </div>
@@ -285,4 +248,4 @@ const Logo = () => {
   );
 };
 
-export default Logo;
+export default Photography;

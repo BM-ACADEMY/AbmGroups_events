@@ -114,43 +114,24 @@ const DrawingCandidates = () => {
     }
   };
 
-  // // Download the image using axios to handle CORS/authenticated requests
-  // const handleDownloadImage = async () => {
-  //   if (previewImage && selectedParticipant) {
-  //     try {
-  //       // Fetch the image as a blob
-  //       const response = await axiosInstance.get(previewImage, {
-  //         responseType: 'blob',
-  //         withCredentials: true,
-  //       });
-
-  //       // Create a URL for the blob
-  //       const url = window.URL.createObjectURL(new Blob([response.data]));
-
-  //       // Determine the filename
-  //       const filenameFromUrl = previewImage.split('/').pop() || 'drawing';
-  //       const participantName = selectedParticipant.user?.name
-  //         ? selectedParticipant.user.name.replace(/\s+/g, '_').toLowerCase()
-  //         : 'participant';
-  //       const extension = filenameFromUrl.split('.').pop() || 'jpg';
-  //       const filename = `${participantName}_drawing.${extension}`;
-
-  //       // Create and trigger the download
-  //       const link = document.createElement('a');
-  //       link.href = url;
-  //       link.download = filename;
-  //       document.body.appendChild(link);
-  //       link.click();
-  //       document.body.removeChild(link);
-  //       window.URL.revokeObjectURL(url); // Clean up the blob URL
-  //     } catch (err) {
-  //       console.error('Error downloading image:', err);
-  //       showToast('error', 'Failed to download image');
-  //     }
-  //   } else {
-  //     showToast('error', 'No image available for download');
-  //   }
-  // };
+  // Download image helper
+  const handleDownloadImage = async (imageUrl, participantName) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${participantName.replace(/\s+/g, '_')}_drawing.jpg`; // dynamic filename
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      showToast('error', 'Failed to download image');
+    }
+  };
 
   if (loading) {
     return <div className="text-center p-4 text-gray-600">Loading...</div>;
@@ -180,17 +161,36 @@ const DrawingCandidates = () => {
               >
                 <Edit size={20} />
               </button>
-              <h2 className="text-lg font-semibold text-gray-800">{participant.user?.name || 'Unknown User'}</h2>
+
+              <h2 className="text-lg font-semibold text-gray-800">
+                {participant.user?.name || 'Unknown User'}
+              </h2>
               <p className="text-gray-600">Phone: {participant.user?.phone || 'N/A'}</p>
               <p className="text-gray-600">Email: {participant.user?.email || 'N/A'}</p>
               <p className="text-gray-600">Marks: {participant.total_marks || 0}</p>
-              <img
-                src={participant.upload_path}
-                alt={`${participant.user?.name || 'Participant'}'s drawing`}
-                className="mt-4 w-full h-48 object-contain rounded-md cursor-pointer"
-                onError={handleImageError}
-                onClick={() => handleImageClick(participant.upload_path, participant)}
-              />
+
+              {/* Image + Download button */}
+              <div className="mt-4 w-full flex flex-col items-center">
+                <img
+                  src={participant.upload_path}
+                  alt={`${participant.user?.name || 'Participant'}'s drawing`}
+                  className="w-full h-48 object-contain rounded-md cursor-pointer"
+                  onError={handleImageError}
+                  onClick={() => handleImageClick(participant.upload_path, participant)}
+                />
+
+                <button
+                  onClick={() =>
+                    handleDownloadImage(
+                      participant.upload_path,
+                      participant.user?.name || 'Participant'
+                    )
+                  }
+                  className="mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 text-sm"
+                >
+                  Download Image
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -215,14 +215,6 @@ const DrawingCandidates = () => {
               />
             )}
           </div>
-          {/* <div className="text-center pb-4">
-            <button
-              onClick={handleDownloadImage}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-            >
-              Download Image
-            </button>
-          </div> */}
         </DialogContent>
       </Dialog>
 
