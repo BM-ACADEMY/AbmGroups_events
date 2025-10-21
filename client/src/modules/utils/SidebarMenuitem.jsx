@@ -11,7 +11,7 @@ export const sidebarMenuItems = {
     // { url: "/admin-dashboard/prices", title: "Prices", icon: Trophy },
     { url: "/admin-dashboard/patterncoding", title: "Pattern Coding", icon: NotebookIcon },
     { url: "/admin-dashboard/drawingcandidates", title: "Drawing Candidates", icon: BookImage },
-    { url: "/admin-dashboard/skidcandidates", title: "Skid Candidates", icon: Video },
+    { url: "/admin-dashboard/skidcandidates", title: "Reel Candidates", icon: Video },
     { url: "/admin-dashboard/memescandidates", title: "Memes Candidates", icon: Image },
     { url: "/admin-dashboard/logocandidates", title: "Logo Candidates", icon: ImagePlus },
     { url: "/admin-dashboard/photographycandidates", title: "Photography Candidates", icon: ImagePlus },
