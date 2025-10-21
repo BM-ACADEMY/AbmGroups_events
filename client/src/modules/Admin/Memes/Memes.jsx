@@ -10,22 +10,19 @@ const Memes = () => {
   const [error, setError] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
-  const [selectedParticipant, setSelectedParticipant] = useState(null); // Store participant for dynamic filename and marks
-  const [showMarksModal, setShowMarksModal] = useState(false); // State for marks modal
-  const [marksInput, setMarksInput] = useState(''); // Store marks input for the modal
+  const [selectedParticipant, setSelectedParticipant] = useState(null); 
+  const [showMarksModal, setShowMarksModal] = useState(false); 
+  const [marksInput, setMarksInput] = useState(''); 
 
   // Fetch participants for the memes competition
   useEffect(() => {
-    const fetchmemesParticipants = async () => {
+    const fetchMemesParticipants = async () => {
       try {
         setLoading(true);
         const response = await axiosInstance.get('/participants', {
           withCredentials: true,
         });
 
-        console.log('Participants API Response:', response.data);
-
-        // Filter participants where competition name is "memes" and have an upload_path
         const memesParticipants = response.data.data.filter(
           (participant) =>
             participant.competition?.name &&
@@ -33,12 +30,9 @@ const Memes = () => {
             participant.upload_path
         );
 
-        console.log('Filtered memes Participants:', memesParticipants);
-
         setParticipants(memesParticipants);
       } catch (err) {
         const errMsg = err.response?.data?.message || 'Failed to fetch participants';
-        console.error('Error fetching participants:', err);
         setError(errMsg);
         showToast('error', errMsg);
       } finally {
@@ -46,35 +40,29 @@ const Memes = () => {
       }
     };
 
-    fetchmemesParticipants();
+    fetchMemesParticipants();
   }, []);
 
-  // Handle image loading errors
   const handleImageError = (e) => {
-    console.error('Error loading image:', e.target.src);
-    e.target.src = '/images/fallback-image.jpg'; // Replace with your actual fallback image path
+    e.target.src = '/images/fallback-image.jpg';
   };
 
-  // Open image preview modal with the selected image and participant
   const handleImageClick = (imageUrl, participant) => {
     setPreviewImage(imageUrl);
     setSelectedParticipant(participant);
     setShowPreviewModal(true);
   };
 
-  // Open marks modal and initialize marks input
   const handleOpenMarksModal = (participant) => {
     setSelectedParticipant(participant);
     setMarksInput(participant.total_marks?.toString() || '');
     setShowMarksModal(true);
   };
 
-  // Handle marks input change in modal
   const handleMarksChange = (value) => {
     setMarksInput(value);
   };
 
-  // Submit marks to backend
   const handleSubmitMarks = async () => {
     if (!selectedParticipant) {
       showToast('error', 'No participant selected');
@@ -83,7 +71,6 @@ const Memes = () => {
 
     const parsedMarks = parseFloat(marksInput);
 
-    // Validate marks
     if (isNaN(parsedMarks) || parsedMarks < 0 || parsedMarks > 100) {
       showToast('error', 'Please enter a valid mark between 0 and 100');
       return;
@@ -96,7 +83,6 @@ const Memes = () => {
         { withCredentials: true }
       );
 
-      // Update participant in state
       setParticipants((prev) =>
         prev.map((p) =>
           p._id === selectedParticipant._id
@@ -106,65 +92,39 @@ const Memes = () => {
       );
 
       showToast('success', 'Marks updated successfully');
-      setShowMarksModal(false); // Close modal after successful submission
+      setShowMarksModal(false);
     } catch (err) {
       const errMsg = err.response?.data?.message || 'Failed to update marks';
-      console.error('Error updating marks:', err);
       showToast('error', errMsg);
     }
   };
 
-  // Download the image using axios to handle CORS/authenticated requests
-  // const handleDownloadImage = async () => {
-  //   if (previewImage && selectedParticipant) {
-  //     try {
-  //       // Fetch the image as a blob
-  //       const response = await axiosInstance.get(previewImage, {
-  //         responseType: 'blob',
-  //         withCredentials: true,
-  //       });
+  // Download image helper
+  const handleDownloadImage = async (imageUrl, participantName) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${participantName.replace(/\s+/g, '_')}_memes.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      showToast('error', 'Failed to download image');
+    }
+  };
 
-  //       // Create a URL for the blob
-  //       const url = window.URL.createObjectURL(new Blob([response.data]));
-
-  //       // Determine the filename
-  //       const filenameFromUrl = previewImage.split('/').pop() || 'memes';
-  //       const participantName = selectedParticipant.user?.name
-  //         ? selectedParticipant.user.name.replace(/\s+/g, '_').toLowerCase()
-  //         : 'participant';
-  //       const extension = filenameFromUrl.split('.').pop() || 'jpg';
-  //       const filename = `${participantName}_memes.${extension}`;
-
-  //       // Create and trigger the download
-  //       const link = document.createElement('a');
-  //       link.href = url;
-  //       link.download = filename;
-  //       document.body.appendChild(link);
-  //       link.click();
-  //       document.body.removeChild(link);
-  //       window.URL.revokeObjectURL(url); // Clean up the blob URL
-  //     } catch (err) {
-  //       console.error('Error downloading image:', err);
-  //       showToast('error', 'Failed to download image');
-  //     }
-  //   } else {
-  //     showToast('error', 'No image available for download');
-  //   }
-  // };
-
-  if (loading) {
-    return <div className="text-center p-4 text-gray-600">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center p-4 text-red-500">Error: {error}</div>;
-  }
+  if (loading) return <div className="text-center p-4 text-gray-600">Loading...</div>;
+  if (error) return <div className="text-center p-4 text-red-500">Error: {error}</div>;
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 text-gray-800">memes Competition Participants</h1>
+      <h1 className="text-2xl font-bold mb-4 text-gray-800">Memes Competition Participants</h1>
       {participants.length === 0 ? (
-        <p className="text-gray-500">No participants with uploaded memess found.</p>
+        <p className="text-gray-500">No participants with uploaded memes found.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {participants.map((participant) => (
@@ -180,17 +140,30 @@ const Memes = () => {
               >
                 <Edit size={20} />
               </button>
+
               <h2 className="text-lg font-semibold text-gray-800">{participant.user?.name || 'Unknown User'}</h2>
               <p className="text-gray-600">Phone: {participant.user?.phone || 'N/A'}</p>
               <p className="text-gray-600">Email: {participant.user?.email || 'N/A'}</p>
               <p className="text-gray-600">Marks: {participant.total_marks || 0}</p>
-              <img
-                src={participant.upload_path}
-                alt={`${participant.user?.name || 'Participant'}'s memes`}
-                className="mt-4 w-full h-48 object-contain rounded-md cursor-pointer"
-                onError={handleImageError}
-                onClick={() => handleImageClick(participant.upload_path, participant)}
-              />
+
+              <div className="mt-4 w-full flex flex-col items-center">
+                <img
+                  src={participant.upload_path}
+                  alt={`${participant.user?.name || 'Participant'}'s memes`}
+                  className="w-full h-48 object-contain rounded-md cursor-pointer"
+                  onError={handleImageError}
+                  onClick={() => handleImageClick(participant.upload_path, participant)}
+                />
+
+                <button
+                  onClick={() =>
+                    handleDownloadImage(participant.upload_path, participant.user?.name || 'Participant')
+                  }
+                  className="mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 text-sm"
+                >
+                  Download Image
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -215,14 +188,6 @@ const Memes = () => {
               />
             )}
           </div>
-          {/* <div className="text-center pb-4">
-            <button
-              onClick={handleDownloadImage}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-            >
-              Download Image
-            </button>
-          </div> */}
         </DialogContent>
       </Dialog>
 

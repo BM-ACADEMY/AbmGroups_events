@@ -29,7 +29,7 @@ const Skid = () => {
         const skidParticipants = response.data.data.filter(
           (participant) =>
             participant.competition?.name &&
-            participant.competition.name.toLowerCase() === 'skid' &&
+            participant.competition.name.toLowerCase() === 'reel' &&
             participant.upload_path
         );
 
@@ -52,7 +52,7 @@ const Skid = () => {
   // Handle video loading errors
   const handleVideoError = (e) => {
     console.error('Error loading video:', e.target.src);
-    showToast('error', 'Failed to load video');
+    // showToast('error', 'Failed to load video');
     e.target.style.display = 'none'; // Hide video element on error
   };
 

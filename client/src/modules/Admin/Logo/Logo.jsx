@@ -4,7 +4,7 @@ import { showToast } from '@/modules/toast/customToast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit, Image as ImageIcon, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 
 const Logo = () => {
   const [participants, setParticipants] = useState([]);
@@ -19,7 +19,6 @@ const Logo = () => {
 
   const maxUploads = 3;
 
-  // Fetch participants for the logo competition
   useEffect(() => {
     const fetchLogoParticipants = async () => {
       try {
@@ -27,8 +26,6 @@ const Logo = () => {
         const response = await axiosInstance.get('/participants', {
           withCredentials: true,
         });
-
-        console.log('Participants API Response:', response.data);
 
         const logoParticipants = response.data.data.filter(
           (participant) =>
@@ -38,12 +35,9 @@ const Logo = () => {
             Array.isArray(participant.upload_path)
         );
 
-        console.log('Filtered Logo Participants:', logoParticipants);
-
         setParticipants(logoParticipants);
       } catch (err) {
         const errMsg = err.response?.data?.message || 'Failed to fetch participants';
-        console.error('Error fetching participants:', err);
         setError(errMsg);
         showToast('error', errMsg);
       } finally {
@@ -54,14 +48,11 @@ const Logo = () => {
     fetchLogoParticipants();
   }, []);
 
-  // Handle image loading errors
   const handleImageError = (e) => {
-    console.error('Error loading image:', e.target.src);
     e.target.style.display = 'none';
     showToast('error', 'Failed to load image');
   };
 
-  // Open image preview modal with all images for the participant
   const handleViewImages = (participant) => {
     setPreviewImages(participant.upload_path || []);
     setCurrentImageIndex(0);
@@ -69,29 +60,24 @@ const Logo = () => {
     setShowPreviewModal(true);
   };
 
-  // Navigate to next image
   const handleNextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % previewImages.length);
   };
 
-  // Navigate to previous image
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + previewImages.length) % previewImages.length);
   };
 
-  // Open marks modal and initialize marks input
   const handleOpenMarksModal = (participant) => {
     setSelectedParticipant(participant);
     setMarksInput(participant.total_marks?.toString() || '');
     setShowMarksModal(true);
   };
 
-  // Handle marks input change in modal
   const handleMarksChange = (value) => {
     setMarksInput(value);
   };
 
-  // Submit marks to backend
   const handleSubmitMarks = async () => {
     if (!selectedParticipant) {
       showToast('error', 'No participant selected');
@@ -99,7 +85,6 @@ const Logo = () => {
     }
 
     const parsedMarks = parseFloat(marksInput);
-
     if (isNaN(parsedMarks) || parsedMarks < 0 || parsedMarks > 100) {
       showToast('error', 'Please enter a valid mark between 0 and 100');
       return;
@@ -124,25 +109,45 @@ const Logo = () => {
       setShowMarksModal(false);
     } catch (err) {
       const errMsg = err.response?.data?.message || 'Failed to update marks';
-      console.error('Error updating marks:', err);
       showToast('error', errMsg);
     }
   };
 
-  // Calculate used and remaining slots
   const getUploadSlotsInfo = (upload_path) => {
     const usedSlots = Array.isArray(upload_path) ? upload_path.length : 0;
     const remainingSlots = maxUploads - usedSlots;
     return { usedSlots, remainingSlots };
   };
 
-  if (loading) {
-    return <div className="text-center p-4 text-gray-600">Loading...</div>;
-  }
+  // Download currently displayed image
+  const handleDownloadImage = async () => {
+    if (!previewImages.length) {
+      showToast('error', 'No image available');
+      return;
+    }
 
-  if (error) {
-    return <div className="text-center p-4 text-red-500">Error: {error}</div>;
-  }
+    const imageUrl = previewImages[currentImageIndex];
+    const participantName = selectedParticipant?.user?.name || 'Participant';
+
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const extension = imageUrl.split('.').pop() || 'jpg';
+      link.download = `${participantName.replace(/\s+/g, '_')}_logo_${currentImageIndex + 1}.${extension}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      showToast('error', 'Failed to download image');
+    }
+  };
+
+  if (loading) return <div className="text-center p-4 text-gray-600">Loading...</div>;
+  if (error) return <div className="text-center p-4 text-red-500">Error: {error}</div>;
 
   return (
     <div className="container mx-auto p-4">
@@ -201,13 +206,23 @@ const Logo = () => {
         </Table>
       )}
 
-      {/* Image Preview Modal with Navigation */}
+      {/* Image Preview Modal with Navigation and Download */}
       <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal} modal={true}>
         <DialogContent className="p-0 max-w-3xl">
           <DialogHeader className="flex justify-between items-center p-4">
             <DialogTitle className="text-lg font-semibold text-gray-800">
               Images for {selectedParticipant?.user?.name || 'Participant'}
             </DialogTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDownloadImage}
+              aria-label="Download image"
+              className="flex items-center gap-1"
+            >
+              <Download size={16} />
+              Download
+            </Button>
           </DialogHeader>
           <div className="relative flex items-center justify-center p-4">
             {previewImages.length > 0 && (
@@ -240,9 +255,7 @@ const Logo = () => {
                 </Button>
               </>
             )}
-            {previewImages.length === 0 && (
-              <p className="text-gray-500">No images available</p>
-            )}
+            {previewImages.length === 0 && <p className="text-gray-500">No images available</p>}
           </div>
           {previewImages.length > 1 && (
             <div className="text-center pb-4">

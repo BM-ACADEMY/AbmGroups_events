@@ -44,7 +44,7 @@ const Competition = () => {
 
   const maxUploads = {
     logo: 3,
-    memes: 3,
+    memes: 1,
     reel: 3, // Defined here but overridden in getUploadSlotsInfo for skid
     photography: 5,
     coding: 0,
