@@ -1,5 +1,5 @@
 import React from 'react';
-import Schoolvideo from '@/assets/samplevideo/college.mp4'
+import Schoolvideo from '@/assets/samplevideo/school.mp4'
 
 const Dashboard = () => {
   return (

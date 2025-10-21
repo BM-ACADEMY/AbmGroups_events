@@ -22,6 +22,7 @@ export const sidebarMenuItems = {
     { url: "/college_student-dashboard/competition", title: "Competition", icon: CalendarPlus },
   ],
   school_student: [
+    { url: "/school_student-dashboard", title: "Dashboard", icon: LayoutDashboard },
     { url: "/school_student-dashboard/competition", title: "Competition", icon: CalendarPlus },
   ],
 };
