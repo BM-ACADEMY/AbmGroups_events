@@ -1,13 +1,11 @@
 const Participant = require('../models/Participant');
 const { processFile, deleteFile } = require('../utils/upload');
 
-// Create or update participant
 exports.createParticipant = async (req, res) => {
   try {
     const { user, competition, total_marks } = req.body;
     let upload_path = [];
 
-    // Fetch competition details to determine max uploads
     const competitionDoc = await require('../models/Competition').findById(competition);
     if (!competitionDoc) {
       return res.status(404).json({ success: false, message: 'Competition not found' });
@@ -15,7 +13,7 @@ exports.createParticipant = async (req, res) => {
     const maxUploads = competitionDoc.name.toLowerCase().includes('photography') ? 5 : 3;
 
     if (req.files && req.files.length > 0) {
-      // Validate total file count
+
       if (req.files.length > maxUploads) {
         return res.status(400).json({ success: false, message: `Cannot upload more than ${maxUploads} files for this competition.` });
       }
@@ -32,7 +30,6 @@ exports.createParticipant = async (req, res) => {
     const existingParticipant = await Participant.findOne({ user });
 
     if (existingParticipant) {
-      // Delete existing files if new files are uploaded
       if (existingParticipant.upload_path && req.files && req.files.length > 0) {
         for (const path of existingParticipant.upload_path) {
           deleteFile(path, 'drawingevent');
