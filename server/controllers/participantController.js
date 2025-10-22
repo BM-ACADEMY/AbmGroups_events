@@ -15,13 +15,6 @@ exports.createParticipant = async (req, res) => {
     const maxUploads = competitionDoc.name.toLowerCase().includes('photography') ? 5 : 3;
 
     if (req.files && req.files.length > 0) {
-      // Validate file size (20MB limit per file)
-      for (const file of req.files) {
-        if (file.size > 20 * 1024 * 1024) {
-          return res.status(400).json({ success: false, message: `File ${file.originalname} exceeds 20MB limit` });
-        }
-      }
-
       // Validate total file count
       if (req.files.length > maxUploads) {
         return res.status(400).json({ success: false, message: `Cannot upload more than ${maxUploads} files for this competition.` });
@@ -102,13 +95,6 @@ exports.updateParticipant = async (req, res) => {
     const maxUploads = competitionDoc.name.toLowerCase().includes('photography') ? 5 : 3;
 
     if (req.files && req.files.length > 0) {
-      // Validate file size (20MB limit per file)
-      for (const file of req.files) {
-        if (file.size > 20 * 1024 * 1024) {
-          return res.status(400).json({ success: false, message: `File ${file.originalname} exceeds 20MB limit` });
-        }
-      }
-
       // Validate total file count (existing + new <= maxUploads)
       const existingFileCount = Array.isArray(existingParticipant.upload_path) ? existingParticipant.upload_path.length : 0;
       const newFileCount = req.files.length;

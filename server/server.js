@@ -28,7 +28,7 @@ app.use(
       objectSrc: ["'none'"],
       scriptSrc: ["'self'"],
       scriptSrcAttr: ["'none'"],
-      styleSrc: ["'self'", "https:", "'unsafe-inline'"],
+      styleSrc: ["'self'", "https:"],
       upgradeInsecureRequests: [],
     },
   })

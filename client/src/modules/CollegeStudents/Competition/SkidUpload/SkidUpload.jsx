@@ -19,12 +19,6 @@ const SkidUpload = ({ participantId, upload_path, onUploadSuccess }) => {
       return;
     }
 
-    if (selectedFile.size > 20 * 1024 * 1024) {
-      showToast('error', `File ${selectedFile.name} exceeds 20MB limit`);
-      setFile(null);
-      return;
-    }
-
     if (usedSlots >= maxUploads) {
       showToast('error', 'Only one video can be uploaded for this competition.');
       setFile(null);
@@ -50,7 +44,6 @@ const SkidUpload = ({ participantId, upload_path, onUploadSuccess }) => {
 
       if (response.data.success) {
         onUploadSuccess(response.data.data);
-        // showToast('success', 'Video uploaded successfully');
       } else {
         showToast('error', response.data.message || 'Failed to upload video');
       }
@@ -72,7 +65,7 @@ const SkidUpload = ({ participantId, upload_path, onUploadSuccess }) => {
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              Select one video (max 20MB)
+              Select one video
             </p>
             <input
               type="file"
