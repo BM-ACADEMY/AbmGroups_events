@@ -1,4 +1,3 @@
-// utils/upload.js
 require("dotenv").config();
 const multer = require("multer");
 const fs = require("fs");
@@ -80,7 +79,6 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 200 * 1024 * 1024 }, // Max 200MB
 });
 
 // Compress and Save Image
