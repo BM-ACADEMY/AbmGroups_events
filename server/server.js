@@ -37,7 +37,8 @@ app.use(
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" })); // Allow cross-origin resource sharing
 
 // CORS setup
-const allowedOrigins = [process.env.CLIENT_URL];
+const allowedOrigins = [process.env.CLIENT_URL,'https://event.abmgroups.org','https://www.event.abmgroups.org'];
+
 
 const corsOptions = {
   origin: (origin, callback) => {
