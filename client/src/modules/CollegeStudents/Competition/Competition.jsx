@@ -34,7 +34,7 @@ const Competition = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [previewImages, setPreviewImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showTestModal, setShowTestModal] = useState(false);
+  const [showTestModal, setHshowTestModal] = useState(false);
   const [currentRound, setCurrentRound] = useState('round1');
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -45,9 +45,27 @@ const Competition = () => {
   const maxUploads = {
     logo: 3,
     memes: 1,
-    reel: 3, // Defined here but overridden in getUploadSlotsInfo for skid
+    reel: 3,
     photography: 5,
     coding: 0,
+  };
+
+  const findPatternCompetition = async (competitionName) => {
+    try {
+      const resp = await axiosInstance.get('/pattern-competitions');
+      const list = resp.data?.data || [];
+      if (competitionName.toLowerCase().includes('coding')) {
+        const active = list.find(pc => pc.is_active);
+        if (active) return active._id;
+        const coding = list.find(pc => pc.competition_type === 'coding');
+        if (coding) return coding._id;
+      }
+      return list[0]?._id || null;
+    } catch (err) {
+      console.error('Failed to fetch pattern competitions', err);
+      showToast('error', 'Could not load pattern competition');
+      return null;
+    }
   };
 
   useEffect(() => {
@@ -56,58 +74,41 @@ const Competition = () => {
         setFetchLoading(false);
         return;
       }
-
       try {
-        const response = await axiosInstance.get('/participants');
-        const participants = response.data.data || [];
-
-        // Enhanced null-checking for participant.user
-        const myParticipant = participants.find(p => 
-          p && p.user && typeof p.user === 'object' && p.user._id === user._id
-        );
-
-        if (myParticipant) {
-          const compResponse = await axiosInstance.get(`/competitions/${myParticipant.competition._id}`);
-          const competitionData = compResponse.data.data || compResponse.data;
-
-          let patternCompetitionId = null;
-          if (competitionData.name.toLowerCase().includes('coding')) {
-            const patternCompResponse = await axiosInstance.get('/pattern-competitions');
-            const patternComp = patternCompResponse.data.data.find(pc => pc._id === '68ece9371ea934eb2d207c5c');
-            patternCompetitionId = patternComp?._id;
-          }
-
-          const marksResponse = await axiosInstance.get('/pattern-marks');
-          const userMarks = marksResponse.data.data.find(m => 
-            m && m.participant && typeof m.participant === 'object' && m.participant._id === myParticipant._id
-          );
-
-          setMyCompetition({
-            ...competitionData,
-            participantId: myParticipant._id,
-            upload_path: Array.isArray(myParticipant.upload_path) ? myParticipant.upload_path : [],
-            total_marks: myParticipant.total_marks,
-            patternCompetitionId,
-          });
-          setPatternMarks(userMarks || null);
-          setCompletedRounds(userMarks?.completed_rounds || []);
-        } else {
-          console.log('No matching participant found for user:', user._id);
+        const partResp = await axiosInstance.get('/participants');
+        const participants = partResp.data.data || [];
+        const myParticipant = participants.find(p => p?.user?._id === user._id);
+        if (!myParticipant) {
           showToast('info', 'No competition found for this user.');
           setMyCompetition(null);
+          return;
         }
+        const compResp = await axiosInstance.get(`/competitions/${myParticipant.competition._id}`);
+        const competitionData = compResp.data.data || compResp.data;
+        let patternCompetitionId = null;
+        if (competitionData.name.toLowerCase().includes('coding')) {
+          patternCompetitionId = await findPatternCompetition(competitionData.name);
+        }
+        const marksResp = await axiosInstance.get('/pattern-marks');
+        const userMarks = marksResp.data.data.find(m => m?.participant?._id === myParticipant._id);
+        setMyCompetition({
+          ...competitionData,
+          participantId: myParticipant._id,
+          upload_path: Array.isArray(myParticipant.upload_path) ? myParticipant.upload_path : [],
+          total_marks: myParticipant.total_marks,
+          patternCompetitionId,
+        });
+        setPatternMarks(userMarks || null);
+        setCompletedRounds(userMarks?.completed_rounds || []);
       } catch (error) {
-        console.error('Error fetching participant:', error);
-        showToast('error', 'Failed to fetch your competition');
+        console.error('Error fetching competition data', error);
+        showToast('error', 'Failed to load your competition');
         setMyCompetition(null);
       } finally {
         setFetchLoading(false);
       }
     };
-
-    if (!loading) {
-      fetchMyCompetition();
-    }
+    if (!loading) fetchMyCompetition();
   }, [user, loading]);
 
   const fetchQuestions = async (round) => {
@@ -117,7 +118,6 @@ const Competition = () => {
       setQuestionLoading(false);
       return;
     }
-
     setQuestionLoading(true);
     try {
       const response = await axiosInstance.get(`/pattern-competitions/${myCompetition.patternCompetitionId}`);
@@ -129,7 +129,6 @@ const Competition = () => {
       };
       const questionsData = competition[roundMap[round]] || [];
       setQuestions(questionsData);
-      console.log(`Fetched questions for ${round}:`, questionsData);
     } catch (error) {
       console.error(`Error fetching questions for ${round}:`, error);
       showToast('error', 'Failed to load questions');
@@ -151,7 +150,7 @@ const Competition = () => {
     setCurrentRound(round);
     setAnswers({});
     await fetchQuestions(round);
-    setShowTestModal(true);
+    setHshowTestModal(true);
   };
 
   const handleAnswerChange = (questionId, value) => {
@@ -166,12 +165,10 @@ const Competition = () => {
       showToast('error', 'Invalid competition or participant data');
       return;
     }
-
     if (Object.keys(answers).length < questions.length) {
       showToast('error', 'Please answer all questions');
       return;
     }
-
     const submission = {
       participantId: myCompetition.participantId,
       competitionId: myCompetition.patternCompetitionId,
@@ -181,7 +178,6 @@ const Competition = () => {
         [currentRound === 'round3' ? 'Answer_note' : 'selectedOption']: value,
       })),
     };
-
     try {
       const response = await axiosInstance.post('/pattern-marks/submit-round', submission);
       setPatternMarks(response.data.data);
@@ -193,7 +189,7 @@ const Competition = () => {
       showToast('success', currentRound === 'round3' 
         ? 'Round 3 submitted successfully. Pending evaluation.'
         : `Round ${currentRound} submitted successfully. Score: ${response.data.data[`${currentRound}_score`]}`);
-      setShowTestModal(false);
+      setHshowTestModal(false);
       setAnswers({});
     } catch (error) {
       console.error('Error submitting round:', error);
@@ -209,7 +205,7 @@ const Competition = () => {
 
   const handleCloseModal = () => {
     setShowImageModal(false);
-    setShowTestModal(false);
+    setHshowTestModal(false);
     setPreviewImages([]);
     setCurrentImageIndex(0);
     setQuestions([]);
@@ -235,7 +231,6 @@ const Competition = () => {
   const getUploadSlotsInfo = () => {
     if (!myCompetition) return { usedSlots: 0, remainingSlots: 0 };
     const competitionName = myCompetition.name.toLowerCase();
-    // Override maxUploads for skid to 1
     const max = competitionName.includes('reel') 
       ? 1 
       : maxUploads[Object.keys(maxUploads).find(key => competitionName.includes(key))] || 3;
@@ -243,6 +238,25 @@ const Competition = () => {
     const remainingSlots = max - usedSlots;
     return { usedSlots, remainingSlots };
   };
+
+  if (loading || fetchLoading) {
+    return <div className="text-center p-6 text-muted-foreground">Loading your competition...</div>;
+  }
+
+  if (!user) {
+    return <div className="text-center p-6 text-muted-foreground">Please log in to view your competition.</div>;
+  }
+
+  if (!myCompetition) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-4">Your Competition</h1>
+        <p className="text-muted-foreground">
+          No competition chosen yet to participate.
+        </p>
+      </div>
+    );
+  }
 
   if (loading || fetchLoading) {
     return <div className="text-center p-6 text-muted-foreground">Loading your competition...</div>;
