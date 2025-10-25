@@ -18,7 +18,8 @@ import {
   Play,
   AlertCircle,
   CircleCheck,
-  CircleAlert
+  CircleAlert,
+  Clock
 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -34,13 +35,22 @@ const Competition = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [previewImages, setPreviewImages] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showTestModal, setHshowTestModal] = useState(false);
+  const [showTestModal, setShowTestModal] = useState(false);
+  const [showInstructionsModal, setShowInstructionsModal] = useState(false);
   const [currentRound, setCurrentRound] = useState('round1');
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
   const [completedRounds, setCompletedRounds] = useState([]);
   const [patternMarks, setPatternMarks] = useState(null);
   const [questionLoading, setQuestionLoading] = useState(false);
+  const [isTestActive, setIsTestActive] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0); // Will be set based on round
+
+  const roundTimes = {
+    round1: 20 * 60, // 20 minutes in seconds
+    round2: 10 * 60, // 10 minutes
+    round3: 30 * 60, // 30 minutes
+  };
 
   const maxUploads = {
     logo: 3,
@@ -138,7 +148,7 @@ const Competition = () => {
     }
   };
 
-  const handleStartTest = async (round) => {
+  const handleOpenInstructions = (round) => {
     if (round === 'round2' && !completedRounds.includes('round1')) {
       showToast('error', 'Complete Round 1 before starting Round 2');
       return;
@@ -148,10 +158,29 @@ const Competition = () => {
       return;
     }
     setCurrentRound(round);
-    setAnswers({});
-    await fetchQuestions(round);
-    setHshowTestModal(true);
+    setShowInstructionsModal(true);
   };
+
+  const handleStartTest = async () => {
+    setShowInstructionsModal(false);
+    setAnswers({});
+    setTimeLeft(roundTimes[currentRound]); // Set round-specific time
+    setIsTestActive(true);
+    await fetchQuestions(currentRound);
+    setShowTestModal(true);
+  };
+
+  useEffect(() => {
+    let timer;
+    if (isTestActive && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0 && isTestActive) {
+      handleSubmitRound(true); // Auto-submit on time up
+    }
+    return () => clearInterval(timer);
+  }, [isTestActive, timeLeft]);
 
   const handleAnswerChange = (questionId, value) => {
     setAnswers(prev => ({
@@ -160,12 +189,13 @@ const Competition = () => {
     }));
   };
 
-  const handleSubmitRound = async () => {
+  const handleSubmitRound = async (isAuto = false) => {
     if (!myCompetition?.participantId || !myCompetition?.patternCompetitionId) {
       showToast('error', 'Invalid competition or participant data');
       return;
     }
-    if (Object.keys(answers).length < questions.length) {
+    // For auto-submit, no need to check all answered
+    if (!isAuto && Object.keys(answers).length < questions.length) {
       showToast('error', 'Please answer all questions');
       return;
     }
@@ -189,11 +219,16 @@ const Competition = () => {
       showToast('success', currentRound === 'round3' 
         ? 'Round 3 submitted successfully. Pending evaluation.'
         : `Round ${currentRound} submitted successfully. Score: ${response.data.data[`${currentRound}_score`]}`);
-      setHshowTestModal(false);
+      setIsTestActive(false);
+      setShowTestModal(false);
       setAnswers({});
     } catch (error) {
       console.error('Error submitting round:', error);
       showToast('error', error.response?.data?.message || 'Failed to submit round');
+      if (!isAuto) {
+        setIsTestActive(false);
+        setShowTestModal(false);
+      }
     }
   };
 
@@ -205,11 +240,14 @@ const Competition = () => {
 
   const handleCloseModal = () => {
     setShowImageModal(false);
-    setHshowTestModal(false);
     setPreviewImages([]);
     setCurrentImageIndex(0);
-    setQuestions([]);
-    setAnswers({});
+    if (!isTestActive) {
+      setShowTestModal(false);
+      setQuestions([]);
+      setAnswers({});
+    } // Prevent closing if test active
+    setShowInstructionsModal(false);
   };
 
   const handleNextImage = () => {
@@ -238,25 +276,6 @@ const Competition = () => {
     const remainingSlots = max - usedSlots;
     return { usedSlots, remainingSlots };
   };
-
-  if (loading || fetchLoading) {
-    return <div className="text-center p-6 text-muted-foreground">Loading your competition...</div>;
-  }
-
-  if (!user) {
-    return <div className="text-center p-6 text-muted-foreground">Please log in to view your competition.</div>;
-  }
-
-  if (!myCompetition) {
-    return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Your Competition</h1>
-        <p className="text-muted-foreground">
-          No competition chosen yet to participate.
-        </p>
-      </div>
-    );
-  }
 
   if (loading || fetchLoading) {
     return <div className="text-center p-6 text-muted-foreground">Loading your competition...</div>;
@@ -364,7 +383,7 @@ const Competition = () => {
               {
                 round: 'round3',
                 title: 'Round 3',
-                subtitle: 'Image Analysis',
+                subtitle: 'Pattern Coding',
                 icon: BarChart3,
                 disabled: completedRounds.includes('round3') || !completedRounds.includes('round2'),
                 completed: completedRounds.includes('round3')
@@ -373,7 +392,7 @@ const Competition = () => {
               <Card key={round} className="relative">
                 <CardContent className="p-6 pt-8">
                   <Button
-                    onClick={() => handleStartTest(round)}
+                    onClick={() => handleOpenInstructions(round)}
                     disabled={disabled}
                     variant={completed ? "default" : disabled ? "outline" : "default"}
                     className={`
@@ -414,7 +433,7 @@ const Competition = () => {
                   {[
                     { label: 'Round 1 (MCQ)', score: patternMarks.round1_score || 0 },
                     { label: 'Round 2 (Debug)', score: patternMarks.round2_score || 0 },
-                    { label: 'Round 3 (Analysis)', score: patternMarks.round3_score || 0 }
+                    { label: 'Round 3 (Pattern)', score: patternMarks.round3_score || 0 }
                   ].map(({ label, score }) => (
                     <Card key={label}>
                       <CardContent className="p-4 text-center">
@@ -455,6 +474,65 @@ const Competition = () => {
   };
 
   const { usedSlots, remainingSlots } = getUploadSlotsInfo();
+
+  const getRoundInstructions = () => {
+    if (currentRound === 'round1') {
+      return (
+        <div className="space-y-4">
+          <h3 className="font-bold text-lg">Round 1: MCQ (Multiple Choice Questions)</h3>
+          <p><strong>Time Limit:</strong> 20 minutes</p>
+          <p><strong>Total Questions:</strong> 15</p>
+          <p><strong>Marks:</strong> 1 mark for each correct answer</p>
+          <p><strong>Negative Marking:</strong> None</p>
+          <div className="space-y-2">
+            <h4 className="font-semibold">Instructions:</h4>
+            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+              <li>Each question will have four options, only one correct.</li>
+              <li>Select the most appropriate answer for each question.</li>
+              <li>Once submitted, you cannot go back to change answers.</li>
+            </ul>
+          </div>
+        </div>
+      );
+    } else if (currentRound === 'round2') {
+      return (
+        <div className="space-y-4">
+          <h3 className="font-bold text-lg">Round 2: Debugging Round</h3>
+          <p><strong>Time Limit:</strong> 10 minutes</p>
+          <p><strong>Total Questions:</strong> 5</p>
+          <p><strong>Marks:</strong> 3 marks for each correct solution</p>
+          <div className="space-y-2">
+            <h4 className="font-semibold">Instructions:</h4>
+            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+              <li>Each question contains code with errors (logical or syntax).</li>
+              <li>Identify and fix the bug(s) so the program runs correctly.</li>
+              <li>You will be judged based on accuracy and efficiency of your corrections.</li>
+              <li>Ensure your solution compiles and runs successfully before submission.</li>
+            </ul>
+          </div>
+        </div>
+      );
+    } else if (currentRound === 'round3') {
+      return (
+        <div className="space-y-4">
+          <h3 className="font-bold text-lg">Round 3: Pattern Coding Round</h3>
+          <p><strong>Time Limit:</strong> 30 minutes</p>
+          <p><strong>Total Questions:</strong> 2</p>
+          <p><strong>Marks:</strong> 10 marks for each correct solution</p>
+          <div className="space-y-2">
+            <h4 className="font-semibold">Instructions:</h4>
+            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+              <li>Write code to generate specific patterns as per the question.</li>
+              <li>Use loops and conditional statements effectively.</li>
+              <li>Output must exactly match the given pattern format (including spaces and symbols).</li>
+              <li>Partial marks may be awarded for logic correctness even if output is slightly off.</li>
+            </ul>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="p-1">
@@ -557,12 +635,50 @@ const Competition = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showTestModal} onOpenChange={handleCloseModal} modal={true}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+      <Dialog open={showInstructionsModal} onOpenChange={handleCloseModal} modal={true}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Code className="h-5 w-5" />
-              Coding Competition - {currentRound.charAt(0).toUpperCase() + currentRound.slice(1)}
+              Instructions for {currentRound.charAt(0).toUpperCase() + currentRound.slice(1).replace('_', ' ')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="p-4 space-y-4">
+            {getRoundInstructions()}
+            <p className="text-muted-foreground">
+              Once started, the timer cannot be stopped, and the modal cannot be closed until time is up or submitted.
+            </p>
+            <p className="text-muted-foreground">
+              Answer as many questions as you can. Unanswered questions will be skipped on submission.
+            </p>
+            <Button onClick={handleStartTest} className="w-full">
+              Start Now
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog 
+        open={showTestModal} 
+        onOpenChange={(open) => {
+          if (!open && isTestActive) return; // Prevent close if active
+          handleCloseModal();
+        }} 
+        modal={true}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Code className="h-5 w-5" />
+                Coding Competition - {currentRound.charAt(0).toUpperCase() + currentRound.slice(1).replace('_', ' ')}
+              </div>
+              {isTestActive && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+                </Badge>
+              )}
             </DialogTitle>
           </DialogHeader>
           <div className="max-h-[50vh] overflow-y-auto p-4 space-y-6">
@@ -631,11 +747,10 @@ const Competition = () => {
             )}
             {!questionLoading && questions.length > 0 && (
               <Button
-                onClick={handleSubmitRound}
-                disabled={Object.keys(answers).length < questions.length}
+                onClick={() => handleSubmitRound(false)}
                 className="w-full"
               >
-                Submit {currentRound.charAt(0).toUpperCase() + currentRound.slice(1)}
+                Submit {currentRound.charAt(0).toUpperCase() + currentRound.slice(1).replace('_', ' ')}
               </Button>
             )}
           </div>
