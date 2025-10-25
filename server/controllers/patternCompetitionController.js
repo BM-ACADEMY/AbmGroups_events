@@ -52,6 +52,8 @@ exports.deleteCompetition = async (req, res) => {
   }
 };
 
+// controllers/patternCompetitionController.js  (only the addQuestion part)
+
 exports.addQuestion = async (req, res) => {
   try {
     const { id } = req.params;
@@ -63,8 +65,13 @@ exports.addQuestion = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Competition not found' });
     }
 
+    // -------------------------------------------------
+    // 1. MCQ / Debugging (Round 1 & 2)
+    // -------------------------------------------------
     if (round === 'round1' || round === 'round2') {
       questionData = JSON.parse(questionDataRaw);
+
+      // basic validation
       if (!questionData.question || !questionData.options || !questionData.correct_answer || !questionData.marks) {
         return res.status(400).json({ success: false, message: 'Missing required fields for question' });
       }
@@ -74,38 +81,45 @@ exports.addQuestion = async (req, res) => {
       if (questionData.marks < 1) {
         return res.status(400).json({ success: false, message: 'Marks must be at least 1' });
       }
+
+      // *** NO LIMIT CHECK ANYMORE ***
       if (round === 'round1') {
-        if (competition.round1_mcqs.length >= 5) {
-          return res.status(400).json({ success: false, message: 'Maximum 5 questions allowed for Round 1' });
-        }
         competition.round1_mcqs.push(questionData);
         competition.total_round1_marks += parseInt(questionData.marks);
       } else {
-        if (competition.round2_debugging.length >= 5) {
-          return res.status(400).json({ success: false, message: 'Maximum 5 questions allowed for Round 2' });
-        }
         competition.round2_debugging.push(questionData);
         competition.total_round2_marks += parseInt(questionData.marks);
       }
-    } else if (round === 'round3') {
+    }
+
+    // -------------------------------------------------
+    // 2. Image + Note (Round 3)
+    // -------------------------------------------------
+    else if (round === 'round3') {
       if (!req.file || !marks) {
         return res.status(400).json({ success: false, message: 'Image and marks are required for round3' });
       }
-      if (competition.round3_image_notes.length >= 5) {
-        return res.status(400).json({ success: false, message: 'Maximum 5 questions allowed for Round 3' });
-      }
+
+      // *** NO LIMIT CHECK ANYMORE ***
       const imagePath = await processFile(req.file.buffer, req.file.mimetype, 'competition_images', req.file.originalname);
       questionData = {
         image_url: imagePath,
-        Answer_note: Answer_note || undefined, // Allow optional Answer_note
+        Answer_note: Answer_note || undefined,
         marks: parseInt(marks),
       };
+
       if (questionData.marks < 1) {
         return res.status(400).json({ success: false, message: 'Marks must be at least 1' });
       }
+
       competition.round3_image_notes.push(questionData);
       competition.total_round3_marks += parseInt(questionData.marks);
-    } else {
+    }
+
+    // -------------------------------------------------
+    // 3. Invalid round
+    // -------------------------------------------------
+    else {
       return res.status(400).json({ success: false, message: 'Invalid round specified' });
     }
 

@@ -139,105 +139,97 @@ const CreateQuestionModal = ({ onQuestionCreated, questionToEdit, onQuestionUpda
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!user) {
-      showToast('error', 'You must be logged in to create or edit a question');
-      navigate('/login');
-      return;
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!user) {
+    showToast('error', 'You must be logged in to create or edit a question');
+    navigate('/login');
+    return;
+  }
 
-    if (!formData.round) {
-      showToast('error', 'Please select a round');
+  if (!formData.round) {
+    showToast('error', 'Please select a round');
+    return;
+  }
+
+  // REMOVED: existingQuestions.length >= 5 check
+
+  if (!formData.question && formData.round !== 'round3_image_notes') {
+    showToast('error', 'Question is required');
+    return;
+  }
+  if (formData.round !== 'round3_image_notes') {
+    if (formData.options.some((opt) => !opt)) {
+      showToast('error', 'All options must be filled');
       return;
     }
-    const roundMap = {
-      round1_mcqs: 'Round 1: MCQ',
-      round2_debugging: 'Round 2: Debugging',
-      round3_image_notes: 'Round 3: Image + Note',
+    if (!formData.correct_answer) {
+      showToast('error', 'Please select a correct answer');
+      return;
+    }
+  } else {
+    if (!imageFile && !formData.image_url) {
+      showToast('error', 'Image is required for Round 3');
+      return;
+    }
+  }
+  if (!formData.marks || formData.marks < 1) {
+    showToast('error', 'Marks must be at least 1');
+    return;
+  }
+
+  setIsSubmitting(true);
+  try {
+    const formDataToSend = new FormData();
+    const questionData = {
+      question: formData.round !== 'round3_image_notes' ? formData.question : undefined,
+      code_snippet: formData.round !== 'round3_image_notes' ? formData.code_snippet : undefined,
+      options: formData.round !== 'round3_image_notes' ? formData.options : undefined,
+      correct_answer: formData.round !== 'round3_image_notes' ? formData.correct_answer : undefined,
+      marks: parseInt(formData.marks),
     };
-    const roundName = roundMap[formData.round];
-    const existingQuestions = questions.filter((q) => q.round === roundName && (!questionToEdit || q._id !== questionToEdit._id));
-    if (existingQuestions.length >= 5) {
-      showToast('error', `Maximum 5 questions allowed for ${roundName}`);
-      return;
+
+    if (formData.round === 'round3_image_notes' && imageFile) {
+      formDataToSend.append('image', imageFile);
     }
-    if (!formData.question && formData.round !== 'round3_image_notes') {
-      showToast('error', 'Question is required');
-      return;
-    }
-    if (formData.round !== 'round3_image_notes') {
-      if (formData.options.some((opt) => !opt)) {
-        showToast('error', 'All options must be filled');
-        return;
-      }
-      if (!formData.correct_answer) {
-        showToast('error', 'Please select a correct answer');
-        return;
-      }
+    formDataToSend.append('questionData', JSON.stringify(questionData));
+    formDataToSend.append('marks', formData.marks);
+    formDataToSend.append('round', {
+      round1_mcqs: 'round1',
+      round2_debugging: 'round2',
+      round3_image_notes: 'round3',
+    }[formData.round]);
+
+    if (questionToEdit) {
+      await axiosInstance.put(
+        `/pattern-competitions/${questionToEdit.competitionId}/${{
+          round1_mcqs: 'round1',
+          round2_debugging: 'round2',
+          round3_image_notes: 'round3',
+        }[formData.round]}/${questionToEdit._id}`,
+        formDataToSend,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true,
+        }
+      );
+      showToast('success', 'Question updated successfully');
+      onQuestionUpdated();
     } else {
-      if (!imageFile && !formData.image_url) {
-        showToast('error', 'Image is required for Round 3');
-        return;
-      }
+      await axiosInstance.put(
+        `/pattern-competitions/${competitionId}/add-question`,
+        formDataToSend,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true,
+        }
+      );
+      showToast('success', 'Question created successfully');
+      onQuestionCreated();
     }
-    if (!formData.marks || formData.marks < 1) {
-      showToast('error', 'Marks must be at least 1');
-      return;
-    }
 
-    setIsSubmitting(true);
-    try {
-      const formDataToSend = new FormData();
-      const questionData = {
-        question: formData.round !== 'round3_image_notes' ? formData.question : undefined,
-        code_snippet: formData.round !== 'round3_image_notes' ? formData.code_snippet : undefined,
-        options: formData.round !== 'round3_image_notes' ? formData.options : undefined,
-        correct_answer: formData.round !== 'round3_image_notes' ? formData.correct_answer : undefined,
-        marks: parseInt(formData.marks),
-      };
-
-      if (formData.round === 'round3_image_notes' && imageFile) {
-        formDataToSend.append('image', imageFile);
-      }
-      formDataToSend.append('questionData', JSON.stringify(questionData));
-      formDataToSend.append('marks', formData.marks);
-      formDataToSend.append('round', {
-        round1_mcqs: 'round1',
-        round2_debugging: 'round2',
-        round3_image_notes: 'round3',
-      }[formData.round]);
-
-      if (questionToEdit) {
-        await axiosInstance.put(
-          `/pattern-competitions/${questionToEdit.competitionId}/${{
-            round1_mcqs: 'round1',
-            round2_debugging: 'round2',
-            round3_image_notes: 'round3',
-          }[formData.round]}/${questionToEdit._id}`,
-          formDataToSend,
-          {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            withCredentials: true,
-          }
-        );
-        showToast('success', 'Question updated successfully');
-        onQuestionUpdated();
-      } else {
-        await axiosInstance.put(
-          `/pattern-competitions/${competitionId}/add-question`,
-          formDataToSend,
-          {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            withCredentials: true,
-          }
-        );
-        showToast('success', 'Question created successfully');
-        onQuestionCreated();
-      }
-
-      setOpen(false);
-      setFormData({
+    setOpen(false);
+   setFormData({
         round: '',
         question: '',
         code_snippet: '',
@@ -247,13 +239,13 @@ const CreateQuestionModal = ({ onQuestionCreated, questionToEdit, onQuestionUpda
         image_url: '',
       });
       setImageFile(null);
-    } catch (error) {
-      const errMsg = error.response?.data?.message || 'Failed to process question';
-      showToast('error', errMsg);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  } catch (error) {
+    const errMsg = error.response?.data?.message || 'Failed to process question';
+    showToast('error', errMsg);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
